@@ -63,6 +63,7 @@ document.write(`<link rel="manifest" href="${manifestUrl}">`);
   --red:       #e53935;
   --red-soft:  #ef5350;
   --green:     #2e7d32;
+  --green-pale:#e8f5e9;
   --blue:      #1565c0;
 
   /* ── Text ── */
@@ -362,6 +363,39 @@ body{
   color:var(--primary);
   line-height:1;
 }
+
+/* ── GCAL SPINNER ── */
+.gcal-spinner{
+  width:36px;height:36px;border-radius:50%;
+  border:3px solid var(--border);
+  border-top-color:var(--primary);
+  animation:spin .7s linear infinite;
+  margin:0 auto;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── GCAL CALENDAR ITEM ── */
+.cal-item{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 12px;
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  border-radius:10px;
+  margin-bottom:7px;
+  cursor:pointer;
+  transition:all .15s;
+}
+.cal-item.selected{
+  border-color:var(--primary-light);
+  background:var(--primary-pale);
+}
+.cal-item:active{opacity:.75}
+.cal-color{width:12px;height:12px;border-radius:50%;flex-shrink:0}
+.cal-info{flex:1;min-width:0}
+.cal-name{font-size:.85rem;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-access{font-size:.68rem;color:var(--text-muted);margin-top:1px}
+.cal-check{font-size:1rem;color:var(--primary);flex-shrink:0}
+
 .detail-dow{font-size:.8rem;color:var(--text-dim);margin-top:2px}
 
 /* ── QUOTE CARD (Thứ Hai) ── */
@@ -756,6 +790,28 @@ body{
       <button class="export-btn" style="margin-top:8px;border-color:var(--red-soft);color:var(--red-soft)" onclick="clearAllEvents()">🗑️ Xóa tất cả sự kiện</button>
     </div>
     <div class="settings-section">
+      <h4>Google Calendar Sync</h4>
+      <div id="gcalStatusRow" class="settings-row">
+        <div>
+          <div class="settings-label" id="gcalStatusLabel">Chưa kết nối</div>
+          <div class="settings-sub" id="gcalStatusSub">Kết nối để sync 2 chiều</div>
+        </div>
+        <div id="gcalStatusDot" style="width:10px;height:10px;border-radius:50%;background:var(--text-muted);flex-shrink:0"></div>
+      </div>
+      <button class="export-btn" id="gcalConnectBtn" onclick="openGcalSetup()" style="margin-top:2px">
+        🔗 Kết nối Google Calendar
+      </button>
+      <div id="gcalSyncActions" style="display:none;margin-top:8px;display:none">
+        <div style="display:flex;gap:8px">
+          <button class="export-btn" style="flex:1" onclick="gcalPull()">⬇️ Tải về</button>
+          <button class="export-btn" style="flex:1" onclick="gcalPush()">⬆️ Đẩy lên</button>
+        </div>
+        <button class="export-btn" style="margin-top:8px;border-color:var(--red-soft);color:var(--red-soft)" onclick="gcalDisconnect()">
+          🔌 Ngắt kết nối
+        </button>
+      </div>
+    </div>
+    <div class="settings-section">
       <h4>Về ứng dụng</h4>
       <div class="settings-row">
         <div><div class="settings-label">Thuật toán</div><div class="settings-sub">Hồ Ngọc Đức / Jean Meeus 1998</div></div>
@@ -767,6 +823,93 @@ body{
         <div><div class="settings-label">Phạm vi</div><div class="settings-sub">1960 – 2099</div></div>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- GOOGLE CALENDAR SETUP SHEET -->
+<div class="sheet" id="gcalSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">🔗 Kết nối Google Calendar</div>
+    <button class="sheet-close" onclick="closeAllSheets()">×</button>
+  </div>
+  <div class="sheet-body">
+
+    <!-- Step 1: Nhập Client ID -->
+    <div id="gcalStep1">
+      <div style="background:var(--primary-pale);border:1px solid var(--primary-dim);border-radius:12px;padding:14px;margin-bottom:16px">
+        <div style="font-size:.82rem;font-weight:700;color:var(--primary);margin-bottom:10px">📋 Cách lấy Client ID (một lần duy nhất)</div>
+        <div style="font-size:.76rem;color:var(--text-dim);line-height:2">
+          <b style="color:var(--text-body)">1.</b> Vào <a href="https://console.cloud.google.com" target="_blank" style="color:var(--primary);font-weight:600">console.cloud.google.com</a><br>
+          <b style="color:var(--text-body)">2.</b> Tạo project mới → bật <b>Google Calendar API</b><br>
+          <b style="color:var(--text-body)">3.</b> <b>APIs & Services</b> → <b>OAuth consent screen</b> → External<br>
+          <b style="color:var(--text-body)">4.</b> <b>Credentials</b> → <b>+ Create</b> → <b>OAuth client ID</b><br>
+          <b style="color:var(--text-body)">5.</b> Type: <b>Web application</b><br>
+          <b style="color:var(--text-body)">6.</b> Authorized JS origins: <code id="gcalOriginCode" style="background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:.75rem;cursor:pointer" onclick="copyOrigin()">bấm để copy</code><br>
+          <b style="color:var(--text-body)">7.</b> Copy <b>Client ID</b> → dán vào ô dưới
+        </div>
+      </div>
+
+      <label style="font-size:.78rem;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">
+        CLIENT ID <span style="color:var(--accent)">*</span>
+      </label>
+      <input class="form-input" id="gcalClientIdInput"
+        placeholder="xxxxxxxxxxxx.apps.googleusercontent.com"
+        style="font-size:.78rem;font-family:monospace">
+      <div style="font-size:.7rem;color:var(--text-muted);margin-top:4px;margin-bottom:14px">
+        🔒 Lưu trên thiết bị của bạn, không gửi đi đâu cả
+      </div>
+
+      <button class="form-submit" onclick="gcalSaveClientId()">
+        Lưu & Kết nối Google →
+      </button>
+    </div>
+
+    <!-- Step 2: Đã kết nối -->
+    <div id="gcalStep2" style="display:none">
+      <div style="text-align:center;padding:16px 0 20px">
+        <div id="gcalUserAvatar" style="width:64px;height:64px;border-radius:50%;background:var(--primary-pale);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:2rem;border:3px solid var(--primary-dim)">👤</div>
+        <div id="gcalUserName" style="font-size:1rem;font-weight:700;color:var(--text-body)"></div>
+        <div id="gcalUserEmail" style="font-size:.78rem;color:var(--text-dim);margin-top:2px"></div>
+        <div style="display:inline-flex;align-items:center;gap:5px;background:var(--green-pale);border:1px solid var(--green);border-radius:20px;padding:4px 12px;margin-top:8px;font-size:.72rem;color:var(--green);font-weight:700">
+          <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
+          Đã kết nối
+        </div>
+      </div>
+
+      <!-- Chọn lịch -->
+      <div style="font-size:.78rem;font-weight:700;color:var(--text-dim);margin-bottom:8px">CHỌN LỊCH ĐỂ SYNC</div>
+      <div id="gcalCalendarList" style="margin-bottom:16px">
+        <div style="color:var(--text-muted);font-size:.8rem;text-align:center;padding:12px">Đang tải danh sách lịch...</div>
+      </div>
+
+      <!-- Sync actions -->
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <button class="form-submit" style="flex:1;background:linear-gradient(135deg,var(--green) 0%,#43a047 100%)" onclick="gcalPull()">
+          ⬇️ Tải về
+        </button>
+        <button class="form-submit" style="flex:1" onclick="gcalPush()">
+          ⬆️ Đẩy lên
+        </button>
+      </div>
+      <div style="font-size:.7rem;color:var(--text-muted);text-align:center;margin-bottom:14px">
+        Tải về: GCal → Lịch Việt &nbsp;|&nbsp; Đẩy lên: Lịch Việt → GCal
+      </div>
+
+      <!-- Sync log -->
+      <div id="gcalSyncLog" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:.75rem;color:var(--text-dim);max-height:120px;overflow-y:auto;line-height:1.8"></div>
+
+      <button class="export-btn" style="border-color:var(--accent-soft);color:var(--accent-soft)" onclick="gcalDisconnect()">
+        🔌 Ngắt kết nối
+      </button>
+    </div>
+
+    <!-- Loading state -->
+    <div id="gcalLoading" style="display:none;text-align:center;padding:32px 0">
+      <div class="gcal-spinner"></div>
+      <div id="gcalLoadingText" style="font-size:.85rem;color:var(--text-dim);margin-top:14px">Đang kết nối...</div>
+    </div>
+
   </div>
 </div>
 
@@ -1076,7 +1219,7 @@ function openSheet(id){
 }
 function closeAllSheets(full=true){
   if(full)document.getElementById('overlay').classList.remove('open');
-  ['daySheet','searchSheet','pickerSheet','settingsSheet','importSheet'].forEach(s=>
+  ['daySheet','searchSheet','pickerSheet','settingsSheet','importSheet','gcalSheet'].forEach(s=>
     document.getElementById(s).classList.remove('open'));
 }
 
@@ -1716,6 +1859,391 @@ document.addEventListener('keydown',e=>{
 });
 
 // ═══════════════════════════════════════════════════
+// MODULE: GOOGLE CALENDAR SYNC
+// OAuth 2.0 PKCE flow — không cần backend
+// User tự cung cấp Client ID từ Google Cloud Console
+// ═══════════════════════════════════════════════════
+
+const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar';
+const GCAL_STORE_KEY = 'lichviet_gcal_v1';
+
+// ── State ──
+let gcal = {
+  clientId:      '',
+  accessToken:   '',
+  tokenExpiry:   0,
+  selectedCalId: 'primary',
+  userInfo:      null,
+};
+
+function gcalLoad() {
+  try { Object.assign(gcal, JSON.parse(localStorage.getItem(GCAL_STORE_KEY) || '{}')); } catch {}
+}
+function gcalSave() {
+  localStorage.setItem(GCAL_STORE_KEY, JSON.stringify(gcal));
+}
+gcalLoad();
+
+// ── Setup sheet ──
+function openGcalSetup() {
+  closeAllSheets(false);
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('gcalSheet').classList.add('open');
+
+  // Set origin hint
+  document.getElementById('gcalOriginCode').textContent = location.origin;
+
+  if (gcal.clientId && gcal.accessToken && Date.now() < gcal.tokenExpiry) {
+    showGcalConnected();
+  } else if (gcal.clientId) {
+    document.getElementById('gcalClientIdInput').value = gcal.clientId;
+    showGcalStep(1);
+  } else {
+    showGcalStep(1);
+  }
+}
+
+function copyOrigin() {
+  navigator.clipboard?.writeText(location.origin)
+    .then(() => toast('Đã copy: ' + location.origin))
+    .catch(() => toast(location.origin));
+}
+
+function showGcalStep(n) {
+  ['gcalStep1','gcalStep2','gcalLoading'].forEach(id => {
+    document.getElementById(id).style.display = 'none';
+  });
+  if (n === 1) document.getElementById('gcalStep1').style.display = '';
+  if (n === 2) document.getElementById('gcalStep2').style.display = '';
+  if (n === 'loading') document.getElementById('gcalLoading').style.display = '';
+}
+
+function setGcalLoading(text) {
+  showGcalStep('loading');
+  document.getElementById('gcalLoadingText').textContent = text;
+}
+
+// ── Lưu Client ID & bắt đầu OAuth ──
+function gcalSaveClientId() {
+  const id = document.getElementById('gcalClientIdInput').value.trim();
+  if (!id || !id.includes('.apps.googleusercontent.com')) {
+    toast('Client ID không hợp lệ');
+    return;
+  }
+  gcal.clientId = id;
+  gcalSave();
+  gcalStartAuth();
+}
+
+// ── OAuth 2.0 Implicit Flow (phù hợp SPA/PWA) ──
+function gcalStartAuth() {
+  const params = new URLSearchParams({
+    client_id:     gcal.clientId,
+    redirect_uri:  location.href.split('?')[0].split('#')[0],
+    response_type: 'token',
+    scope:         GCAL_SCOPE + ' https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
+    include_granted_scopes: 'true',
+    state: 'gcal_auth',
+  });
+  // Lưu trạng thái trước khi redirect
+  sessionStorage.setItem('gcal_pending', '1');
+  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
+}
+
+// ── Xử lý callback (hash fragment từ Google) ──
+function gcalHandleCallback() {
+  const hash = window.location.hash.substring(1);
+  if (!hash) return;
+  const params = new URLSearchParams(hash);
+  const token  = params.get('access_token');
+  const state  = params.get('state');
+  const expiresIn = +params.get('expires_in') || 3600;
+
+  if (token && state === 'gcal_auth') {
+    gcal.accessToken = token;
+    gcal.tokenExpiry = Date.now() + (expiresIn - 60) * 1000;
+    gcalSave();
+    // Xóa hash khỏi URL
+    history.replaceState(null, '', location.pathname + location.search);
+    sessionStorage.removeItem('gcal_pending');
+    // Fetch user info rồi mở sheet
+    gcalFetchUserInfo().then(() => {
+      openGcalSetup();
+      updateGcalSettingsUI();
+    });
+  }
+}
+
+// ── Fetch user info ──
+async function gcalFetchUserInfo() {
+  try {
+    const res = await gcalFetch('https://www.googleapis.com/oauth2/v2/userinfo');
+    gcal.userInfo = res;
+    gcalSave();
+  } catch {}
+}
+
+// ── Hiển thị step 2 (đã kết nối) ──
+async function showGcalConnected() {
+  setGcalLoading('Đang tải thông tin...');
+  if (!gcal.userInfo) await gcalFetchUserInfo();
+
+  // User info
+  const u = gcal.userInfo || {};
+  document.getElementById('gcalUserName').textContent = u.name || 'Google User';
+  document.getElementById('gcalUserEmail').textContent = u.email || '';
+  if (u.picture) {
+    const av = document.getElementById('gcalUserAvatar');
+    av.innerHTML = `<img src="${u.picture}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
+  }
+
+  showGcalStep(2);
+
+  // Load calendar list
+  await gcalLoadCalendars();
+}
+
+// ── Tải danh sách lịch ──
+async function gcalLoadCalendars() {
+  const el = document.getElementById('gcalCalendarList');
+  el.innerHTML = '<div style="color:var(--text-muted);font-size:.8rem;text-align:center;padding:12px">Đang tải...</div>';
+  try {
+    const data = await gcalFetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=20');
+    const items = data.items || [];
+    if (!items.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:.8rem;text-align:center;padding:12px">Không tìm thấy lịch</div>'; return; }
+
+    el.innerHTML = items.map(cal => `
+      <div class="cal-item ${gcal.selectedCalId === cal.id ? 'selected' : ''}"
+           onclick="selectCalendar('${cal.id.replace(/'/g,"\\'")}', this)">
+        <div class="cal-color" style="background:${cal.backgroundColor || '#1565c0'}"></div>
+        <div class="cal-info">
+          <div class="cal-name">${escHtml(cal.summary)}</div>
+          <div class="cal-access">${cal.accessRole === 'owner' ? '👑 Chủ sở hữu' : cal.accessRole === 'writer' ? '✏️ Có thể chỉnh sửa' : '👁️ Chỉ xem'}</div>
+        </div>
+        ${gcal.selectedCalId === cal.id ? '<div class="cal-check">✓</div>' : ''}
+      </div>`).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--accent);font-size:.8rem;padding:10px">${escHtml(e.message)}</div>`;
+  }
+}
+
+function selectCalendar(id, el) {
+  gcal.selectedCalId = id;
+  gcalSave();
+  document.querySelectorAll('.cal-item').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  if (!el.querySelector('.cal-check')) el.insertAdjacentHTML('beforeend','<div class="cal-check">✓</div>');
+  document.querySelectorAll('.cal-item:not(.selected) .cal-check').forEach(c => c.remove());
+}
+
+// ── Pull: Google Calendar → Lịch Việt ──
+async function gcalPull() {
+  if (!gcalCheckToken()) return;
+  setGcalLoading('Đang tải sự kiện từ Google...');
+  try {
+    const now   = new Date();
+    const tMin  = new Date(now.getFullYear() - 1, 0, 1).toISOString();
+    const tMax  = new Date(now.getFullYear() + 2, 11, 31).toISOString();
+    const url   = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(gcal.selectedCalId)}/events`
+                + `?timeMin=${tMin}&timeMax=${tMax}&singleEvents=true&maxResults=500&orderBy=startTime`;
+    const data  = await gcalFetch(url);
+    const items = data.items || [];
+
+    let imported = 0, skipped = 0;
+    items.forEach(ev => {
+      if (!ev.summary) return;
+      const start = ev.start?.date || ev.start?.dateTime;
+      if (!start) return;
+
+      // Parse date
+      const dt = start.length === 10
+        ? { y: +start.slice(0,4), m: +start.slice(5,7), d: +start.slice(8,10), allday: true, time: '' }
+        : parseGcalDatetime(start);
+
+      const uid = 'gcal-' + (ev.id || Date.now());
+      const k   = dayKey(dt.d, dt.m, dt.y);
+      const existing = events[k] || [];
+      if (existing.some(e => e.uid === uid || e.uid === ev.id)) { skipped++; return; }
+
+      addEvent(dt.d, dt.m, dt.y, {
+        name:  ev.summary,
+        time:  dt.time,
+        note:  [ev.description, ev.location ? '📍 ' + ev.location : ''].filter(Boolean).join(' | ').slice(0, 200),
+        uid,
+        gcal:  true,
+        gcalId: ev.id,
+      });
+      imported++;
+    });
+
+    render();
+    showGcalConnected();
+    gcalLog(`✅ Tải về: +${imported} mới, bỏ qua ${skipped} trùng`);
+    toast(`⬇️ Tải về ${imported} sự kiện`);
+  } catch(e) {
+    showGcalConnected();
+    gcalLog('❌ Lỗi: ' + e.message);
+    toast('Lỗi: ' + e.message);
+  }
+}
+
+function parseGcalDatetime(str) {
+  // ISO 8601: 2026-05-01T09:00:00+07:00 hoặc Z
+  const d = new Date(str);
+  const vn = new Date(d.getTime() + 7 * 3600000); // shift to UTC+7
+  return {
+    y: vn.getUTCFullYear(), m: vn.getUTCMonth() + 1, d: vn.getUTCDate(),
+    time: `${String(vn.getUTCHours()).padStart(2,'0')}:${String(vn.getUTCMinutes()).padStart(2,'0')}`,
+    allday: false,
+  };
+}
+
+// ── Push: Lịch Việt → Google Calendar ──
+async function gcalPush() {
+  if (!gcalCheckToken()) return;
+  const allUserEvs = Object.entries(events).flatMap(([k, arr]) => {
+    const [y,m,d] = k.split('-').map(Number);
+    return arr.filter(e => !e.gcal).map(e => ({ ...e, y, m, d }));
+  });
+
+  if (!allUserEvs.length) { toast('Không có sự kiện mới để đẩy lên'); return; }
+
+  setGcalLoading(`Đang đẩy ${allUserEvs.length} sự kiện...`);
+  let pushed = 0, failed = 0;
+
+  for (const ev of allUserEvs) {
+    try {
+      const start = ev.time
+        ? `${ev.y}-${String(ev.m).padStart(2,'0')}-${String(ev.d).padStart(2,'0')}T${ev.time}:00+07:00`
+        : `${ev.y}-${String(ev.m).padStart(2,'0')}-${String(ev.d).padStart(2,'0')}`;
+      const end = ev.time
+        ? `${ev.y}-${String(ev.m).padStart(2,'0')}-${String(ev.d).padStart(2,'0')}T${ev.time.slice(0,2) < '23' ? String(+ev.time.slice(0,2)+1).padStart(2,'0') : '23'}:${ev.time.slice(3)}:00+07:00`
+        : nextDay(ev.y, ev.m, ev.d);
+
+      const lunar = solar2lunar(ev.d, ev.m, ev.y);
+      const body = {
+        summary: ev.name,
+        description: `[Lịch Việt] ${ev.note || ''}\n🗓️ Âm lịch: ${lunar.ld}/${lunar.lm}/${lunar.ly}${lunar.leap?' (nhuận)':''}`.trim(),
+        start: ev.time ? { dateTime: start, timeZone: 'Asia/Ho_Chi_Minh' } : { date: start },
+        end:   ev.time ? { dateTime: end,   timeZone: 'Asia/Ho_Chi_Minh' } : { date: end },
+        source: { title: 'Lịch Việt PWA', url: location.origin },
+      };
+
+      const res = await gcalFetch(
+        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(gcal.selectedCalId)}/events`,
+        { method: 'POST', body: JSON.stringify(body) }
+      );
+
+      // Đánh dấu đã push, lưu gcalId
+      const k = dayKey(ev.d, ev.m, ev.y);
+      const idx = (events[k] || []).findIndex(e => e.id === ev.id);
+      if (idx >= 0) { events[k][idx].gcal = true; events[k][idx].gcalId = res.id; }
+      pushed++;
+    } catch { failed++; }
+  }
+
+  saveEvents();
+  render();
+  showGcalConnected();
+  gcalLog(`✅ Đẩy lên: ${pushed} thành công${failed ? ', ' + failed + ' lỗi' : ''}`);
+  toast(`⬆️ Đẩy lên ${pushed} sự kiện`);
+}
+
+function nextDay(y, m, d) {
+  const dt = new Date(y, m-1, d+1);
+  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
+}
+
+// ── Ngắt kết nối ──
+function gcalDisconnect() {
+  if (!confirm('Ngắt kết nối Google Calendar?')) return;
+  gcal.accessToken = '';
+  gcal.tokenExpiry = 0;
+  gcal.userInfo    = null;
+  gcalSave();
+  closeAllSheets();
+  updateGcalSettingsUI();
+  toast('Đã ngắt kết nối');
+}
+
+// ── Helper: fetch với auth token ──
+async function gcalFetch(url, opts = {}) {
+  if (!gcal.accessToken) throw new Error('Chưa đăng nhập');
+  const res = await fetch(url, {
+    ...opts,
+    headers: {
+      'Authorization': 'Bearer ' + gcal.accessToken,
+      'Content-Type': 'application/json',
+      ...(opts.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    if (res.status === 401) {
+      gcal.accessToken = '';
+      gcalSave();
+      updateGcalSettingsUI();
+      throw new Error('Token hết hạn — vui lòng đăng nhập lại');
+    }
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err?.error?.message || `HTTP ${res.status}`);
+  }
+  return res.json();
+}
+
+function gcalCheckToken() {
+  if (!gcal.accessToken || Date.now() >= gcal.tokenExpiry) {
+    toast('Phiên đăng nhập hết hạn — vui lòng kết nối lại');
+    openGcalSetup();
+    return false;
+  }
+  return true;
+}
+
+// ── Sync log ──
+function gcalLog(msg) {
+  const el = document.getElementById('gcalSyncLog');
+  if (!el) return;
+  el.style.display = '';
+  el.innerHTML += `<div>${new Date().toLocaleTimeString('vi-VN')} — ${msg}</div>`;
+  el.scrollTop = el.scrollHeight;
+}
+
+// ── Cập nhật Settings UI ──
+function updateGcalSettingsUI() {
+  const connected = gcal.accessToken && Date.now() < gcal.tokenExpiry;
+  const label  = document.getElementById('gcalStatusLabel');
+  const sub    = document.getElementById('gcalStatusSub');
+  const dot    = document.getElementById('gcalStatusDot');
+  const btn    = document.getElementById('gcalConnectBtn');
+  const acts   = document.getElementById('gcalSyncActions');
+
+  if (connected) {
+    label.textContent = gcal.userInfo?.email || 'Đã kết nối';
+    sub.textContent   = 'Google Calendar';
+    dot.style.background = '#2e7d32';
+    btn.textContent   = '✏️ Quản lý kết nối';
+    acts.style.display = '';
+  } else {
+    label.textContent = gcal.clientId ? 'Token hết hạn' : 'Chưa kết nối';
+    sub.textContent   = 'Kết nối để sync 2 chiều';
+    dot.style.background = 'var(--text-muted)';
+    btn.textContent   = '🔗 Kết nối Google Calendar';
+    acts.style.display = 'none';
+  }
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Xử lý OAuth callback khi app load ──
+if (window.location.hash.includes('access_token')) {
+  gcalHandleCallback();
+}
+
+// ── Thêm gcalSheet vào danh sách sheet ──
+
+// ═══════════════════════════════════════════════════
 // MODULE 10: SERVICE WORKER (PWA offline)
 // ═══════════════════════════════════════════════════
 if('serviceWorker' in navigator){
@@ -1734,6 +2262,7 @@ self.addEventListener('fetch',e=>e.respondWith(
 
 // ── INIT ──
 render();
+updateGcalSettingsUI();
 </script>
 </body>
 </html>
