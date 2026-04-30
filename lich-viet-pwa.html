@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1565c0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Lịch Việt">
+<meta name="description" content="Lịch âm dương Việt Nam – thuật toán Hồ Ngọc Đức">
+<title>Lịch Việt</title>
+
+<!-- PWA Manifest inline -->
+<script>
+const MANIFEST = {
+  name: "Lịch Âm Dương Việt Nam",
+  short_name: "Lịch Việt",
+  description: "Lịch âm dương Việt Nam với thuật toán Hồ Ngọc Đức",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#1a1005",
+  theme_color: "#1a1005",
+  orientation: "portrait-primary",
+  icons: [
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%231565c0'/%3E%3Ctext x='96' y='130' text-anchor='middle' font-size='110' fill='%23ffca28'%3E🗓%3C/text%3E%3C/svg%3E", sizes: "192x192", type: "image/svg+xml" },
+    { src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='80' fill='%231565c0'/%3E%3Ctext x='256' y='360' text-anchor='middle' font-size='300' fill='%23ffca28'%3E🗓%3C/text%3E%3C/svg%3E", sizes: "512x512", type: "image/svg+xml" }
+  ]
+};
+const blob = new Blob([JSON.stringify(MANIFEST)], {type:'application/json'});
+const manifestUrl = URL.createObjectURL(blob);
+document.write(`<link rel="manifest" href="${manifestUrl}">`);
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap');
+
+:root {
+  /* ── Nền & bề mặt ── */
+  --bg:        #f0f7ff;
+  --surface:   #ffffff;
+  --surface2:  #f5f9ff;
+  --surface3:  #e8f2ff;
+  --border:    #d0e4f7;
+
+  /* ── Màu chủ đạo: Xanh dương Việt Nam ── */
+  --primary:       #1565c0;
+  --primary-light: #1e88e5;
+  --primary-pale:  #e3f2fd;
+  --primary-dim:   #90caf9;
+
+  /* ── Màu nhấn: Đỏ son ── */
+  --accent:        #e53935;
+  --accent-soft:   #ef5350;
+  --accent-pale:   #ffebee;
+
+  /* ── Vàng: Ngôi sao vàng ── */
+  --gold:          #f9a825;
+  --gold-light:    #ffca28;
+  --gold-pale:     #fff8e1;
+  --gold-dim:      #f57f17;
+
+  /* ── Màu alias cho compatibility ── */
+  --red:       #e53935;
+  --red-soft:  #ef5350;
+  --green:     #2e7d32;
+  --blue:      #1565c0;
+
+  /* ── Text ── */
+  --text:          #1a237e;
+  --text-body:     #263238;
+  --text-dim:      #546e7a;
+  --text-muted:    #90a4ae;
+
+  /* ── Ngày đặc biệt ── */
+  --sunday:        #e53935;
+  --saturday:      #1565c0;
+  --today-ring:    #f9a825;
+
+  /* ── Shadow ── */
+  --shadow-sm: 0 1px 4px rgba(21,101,192,.10);
+  --shadow-md: 0 4px 16px rgba(21,101,192,.13);
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bot: env(safe-area-inset-bottom, 0px);
+
+  --font-display: 'Playfair Display', Georgia, serif;
+  --font-body:    'Quicksand', sans-serif;
+}
+
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{height:100%;overflow:hidden}
+body{
+  font-family:var(--font-body);
+  background:var(--bg);
+  color:var(--text);
+  height:100%;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  user-select:none;
+}
+
+/* ── HEADER ── */
+.header{
+  background:linear-gradient(135deg, #1565c0 0%, #1e88e5 100%);
+  padding:calc(var(--safe-top) + 10px) 12px 10px;
+  border-bottom:none;
+  box-shadow:var(--shadow-md);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-shrink:0;
+  position:relative;
+}
+.header-logo{
+  font-family:var(--font-display);
+  font-size:1.05rem;
+  color:#ffffff;
+  font-weight:700;
+  white-space:nowrap;
+  letter-spacing:.02em;
+}
+.header-nav{
+  display:flex;
+  align-items:center;
+  gap:4px;
+  flex:1;
+  justify-content:center;
+}
+.nav-btn{
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.3);
+  color:#ffffff;
+  width:32px;height:32px;
+  border-radius:50%;
+  cursor:pointer;
+  font-size:1rem;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+  flex-shrink:0;
+}
+.nav-btn:active{background:rgba(255,255,255,.32);transform:scale(.92)}
+.month-year-display{
+  font-family:var(--font-display);
+  font-size:.95rem;
+  color:#ffffff;
+  font-weight:700;
+  cursor:pointer;
+  padding:4px 10px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.35);
+  background:rgba(255,255,255,.15);
+  white-space:nowrap;
+  min-width:130px;
+  text-align:center;
+}
+.header-actions{display:flex;gap:6px}
+.icon-btn{
+  background:none;border:none;
+  color:rgba(255,255,255,.85);
+  font-size:1.2rem;cursor:pointer;
+  width:34px;height:34px;
+  border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.icon-btn:active{background:rgba(255,255,255,.2);color:#ffca28}
+
+/* ── LUNAR STRIP ── */
+.lunar-strip{
+  background:var(--primary-pale);
+  border-bottom:1px solid var(--border);
+  padding:5px 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  flex-shrink:0;
+  gap:8px;
+}
+.lunar-strip-text{
+  font-size:.72rem;
+  color:var(--text-dim);
+  font-weight:500;
+}
+.lunar-strip-text strong{color:var(--primary)}
+.legend{display:flex;gap:12px;align-items:center}
+.leg{display:flex;align-items:center;gap:4px;font-size:.68rem;color:var(--text-muted)}
+.leg-dot{width:7px;height:7px;border-radius:50%}
+
+/* ── WEEKDAYS ── */
+.weekdays{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  background:var(--surface3);
+  border-bottom:2px solid var(--border);
+  flex-shrink:0;
+}
+.wd{
+  text-align:center;
+  padding:7px 2px;
+  font-size:.65rem;
+  font-weight:700;
+  letter-spacing:.06em;
+  color:var(--text-dim);
+  text-transform:uppercase;
+}
+.wd:first-child{color:var(--sunday)}
+.wd:last-child{color:var(--saturday)}
+
+/* ── SCROLL AREA ── */
+.scroll-area{flex:1;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch}
+
+/* ── CALENDAR GRID ── */
+.cal-grid{
+  display:grid;
+  grid-template-columns:repeat(7,1fr);
+  gap:1px;
+  background:var(--border);
+  box-shadow:var(--shadow-sm);
+}
+.day{
+  background:var(--surface);
+  padding:6px 5px 5px;
+  min-height:80px;
+  cursor:pointer;
+  position:relative;
+  transition:background .1s;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.day:active{background:var(--surface3)}
+.day.other{background:#f8fbff;opacity:.6}
+.day.today{background:var(--gold-pale)}
+.day.today::after{
+  content:'';position:absolute;inset:0;
+  border:2px solid var(--today-ring);
+  border-radius:2px;pointer-events:none;
+  box-shadow:inset 0 0 0 1px rgba(249,168,37,.2);
+}
+.day.has-event{background:var(--surface2)}
+.day-top{display:flex;align-items:flex-start;justify-content:space-between}
+.solar{
+  font-family:var(--font-display);
+  font-size:1.15rem;
+  font-weight:700;
+  line-height:1;
+  color:var(--text-body);
+}
+.day.sun .solar{color:var(--accent)}
+.day.sat .solar{color:var(--primary)}
+.day.other .solar{color:var(--text-muted)}
+.hd-dot{width:6px;height:6px;border-radius:50%;margin-top:2px;flex-shrink:0}
+.can-chi-day{font-size:.6rem;color:var(--text-muted);line-height:1;font-weight:500}
+.lunar-num{
+  font-size:.7rem;font-weight:600;
+  color:var(--text-dim);line-height:1;
+}
+.lunar-num.mong1{color:var(--primary);font-weight:700}
+.lunar-num.ram{color:var(--primary-light);font-weight:700}
+.event-dot-row{display:flex;gap:2px;flex-wrap:wrap;margin-top:1px}
+.event-dot{
+  width:5px;height:5px;border-radius:50%;
+  background:var(--primary-light);flex-shrink:0;
+}
+.event-label{
+  font-size:.58rem;
+  color:var(--accent);
+  font-weight:700;
+  line-height:1.2;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:1;
+  -webkit-box-orient:vertical;
+}
+
+/* ── TODAY STRIP (below calendar, current day summary) ── */
+.today-bar{
+  background:var(--surface);
+  border-top:2px solid var(--border);
+  box-shadow:0 -2px 12px rgba(21,101,192,.08);
+  padding:8px 14px calc(var(--safe-bot) + 8px);
+  flex-shrink:0;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:8px;
+}
+.today-info{flex:1;min-width:0}
+.today-date{font-size:.95rem;font-weight:700;color:var(--primary)}
+.today-lunar{font-size:.72rem;color:var(--text-dim);margin-top:1px}
+.add-event-btn{
+  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);
+  border:none;color:#ffffff;
+  box-shadow:var(--shadow-sm);
+  padding:8px 16px;border-radius:20px;
+  font-size:.82rem;font-weight:700;
+  font-family:var(--font-body);
+  cursor:pointer;white-space:nowrap;
+  transition:all .15s;flex-shrink:0;
+}
+.add-event-btn:active{opacity:.8;transform:scale(.95)}
+
+/* ── SHEETS (bottom drawer) ── */
+.sheet-overlay{
+  position:fixed;inset:0;
+  background:rgba(26,35,126,.35);
+  backdrop-filter:blur(3px);
+  z-index:200;
+  opacity:0;pointer-events:none;
+  transition:opacity .25s;
+}
+.sheet-overlay.open{opacity:1;pointer-events:all}
+.sheet{
+  position:fixed;bottom:0;left:0;right:0;
+  background:var(--surface);
+  border-radius:20px 20px 0 0;
+  border-top:3px solid var(--primary-pale);
+  box-shadow:0 -8px 32px rgba(21,101,192,.15);
+  z-index:201;
+  padding:0 0 calc(var(--safe-bot) + 8px);
+  transform:translateY(100%);
+  transition:transform .3s cubic-bezier(.32,.72,0,1);
+  max-height:92vh;
+  display:flex;
+  flex-direction:column;
+}
+.sheet.open{transform:translateY(0)}
+.sheet-handle{
+  width:40px;height:4px;
+  background:var(--primary-dim);
+  border-radius:2px;
+  margin:10px auto 0;
+  flex-shrink:0;
+}
+.sheet-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px 8px;
+  flex-shrink:0;
+  border-bottom:1px solid var(--border);
+}
+.sheet-title{
+  font-family:var(--font-display);
+  font-size:1.05rem;font-weight:700;
+  color:var(--primary);
+}
+.sheet-close{
+  background:var(--surface3);border:1px solid var(--border);
+  color:var(--primary);
+  width:30px;height:30px;border-radius:50%;
+  font-size:1rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+.sheet-body{
+  overflow-y:auto;padding:12px 16px;flex:1;
+}
+
+/* ── DAY DETAIL SHEET ── */
+.detail-solar-big{
+  font-family:var(--font-display);
+  font-size:2.2rem;font-weight:700;
+  color:var(--primary);
+  line-height:1;
+}
+.detail-dow{font-size:.8rem;color:var(--text-dim);margin-top:2px}
+
+/* ── QUOTE CARD (Thứ Hai) ── */
+.quote-card{
+  margin:14px 0 4px;
+  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);
+  border-radius:14px;
+  padding:16px 18px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:var(--shadow-md);
+}
+.quote-card::before{
+  content:'\201C';
+  position:absolute;top:-8px;left:10px;
+  font-size:5rem;font-family:var(--font-display);
+  color:rgba(255,255,255,.15);
+  line-height:1;pointer-events:none;
+}
+.quote-card::after{
+  content:'';
+  position:absolute;bottom:-20px;right:-20px;
+  width:80px;height:80px;
+  border-radius:50%;
+  background:rgba(255,255,255,.07);
+  pointer-events:none;
+}
+.quote-label{
+  font-size:.62rem;font-weight:700;
+  color:rgba(255,255,255,.7);
+  letter-spacing:.1em;text-transform:uppercase;
+  margin-bottom:10px;
+  display:flex;align-items:center;gap:5px;
+}
+.quote-text{
+  font-family:var(--font-display);
+  font-size:.95rem;font-weight:600;
+  color:#ffffff;
+  line-height:1.6;
+  font-style:italic;
+  margin-bottom:10px;
+  position:relative;z-index:1;
+}
+.quote-author{
+  font-size:.72rem;
+  color:rgba(255,255,255,.75);
+  font-weight:600;
+  text-align:right;
+}
+.quote-refresh{
+  position:absolute;top:12px;right:14px;
+  background:rgba(255,255,255,.2);
+  border:1px solid rgba(255,255,255,.3);
+  color:#fff;
+  width:28px;height:28px;border-radius:50%;
+  font-size:.85rem;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .2s;z-index:2;
+}
+.quote-refresh:active{background:rgba(255,255,255,.35);transform:rotate(180deg)}
+
+.detail-cards{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;margin:14px 0;
+}
+.dcard{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:12px;
+  padding:10px 12px;
+  box-shadow:var(--shadow-sm);
+}
+.dcard-label{font-size:.62rem;color:var(--text-dim);letter-spacing:.05em;text-transform:uppercase;margin-bottom:3px}
+.dcard-value{font-size:.92rem;font-weight:600;color:var(--text-body)}
+.dcard-value.hoang{color:var(--green)}
+.dcard-value.hac{color:var(--accent-soft)}
+.dcard-value.gold{color:var(--primary)}
+
+.day-events-list{margin-top:4px}
+.day-events-list h4{
+  font-size:.72rem;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.06em;
+  margin-bottom:8px;
+}
+.event-item{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-left:3px solid var(--primary-light);
+  border-radius:8px;
+  padding:10px 12px;
+  margin-bottom:8px;
+  display:flex;align-items:flex-start;justify-content:space-between;gap:8px;
+}
+.event-item.holiday{border-left-color:var(--accent)}
+.event-name{font-size:.85rem;font-weight:600;color:var(--text);flex:1}
+.event-time{font-size:.72rem;color:var(--text-dim);white-space:nowrap}
+.event-del{
+  background:none;border:none;
+  color:var(--text-muted);cursor:pointer;
+  font-size:.85rem;padding:0 2px;
+}
+
+.add-event-form{margin-top:12px;border-top:1px solid var(--border);padding-top:12px}
+.add-event-form h4{font-size:.8rem;color:var(--text-dim);margin-bottom:10px}
+.form-input{
+  width:100%;
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  color:var(--text-body);
+  padding:10px 12px;
+  border-radius:8px;
+  font-size:.88rem;
+  font-family:var(--font-body);
+  margin-bottom:8px;
+  outline:none;
+}
+.form-input:focus{border-color:var(--primary-light);box-shadow:0 0 0 3px var(--primary-pale)}
+.form-input::placeholder{color:var(--text-muted)}
+.form-row{display:flex;gap:8px}
+.form-row .form-input{flex:1}
+.form-submit{
+  width:100%;
+  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);
+  border:none;color:#ffffff;
+  padding:11px;border-radius:10px;
+  font-size:.9rem;font-weight:700;
+  font-family:var(--font-body);
+  cursor:pointer;
+  transition:opacity .15s;
+}
+.form-submit:active{opacity:.8}
+
+/* ── SEARCH SHEET ── */
+.search-box-wrap{position:relative;margin-bottom:12px}
+.search-box{
+  width:100%;
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  color:var(--text-body);
+  padding:10px 12px 10px 36px;
+  border-radius:10px;
+  font-size:.88rem;
+  font-family:var(--font-body);
+  outline:none;
+}
+.search-box:focus{border-color:var(--primary-light);box-shadow:0 0 0 3px var(--primary-pale)}
+.search-box::placeholder{color:var(--text-muted)}
+.search-icon{
+  position:absolute;left:10px;top:50%;
+  transform:translateY(-50%);
+  color:var(--text-muted);font-size:1rem;
+  pointer-events:none;
+}
+.search-hint{font-size:.72rem;color:var(--text-muted);margin-bottom:10px;line-height:1.5}
+.search-result{
+  background:var(--primary-pale);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:14px;
+  margin-top:8px;
+}
+.sr-solar{font-size:1.1rem;font-weight:700;color:var(--primary);font-family:var(--font-display)}
+.sr-lunar{font-size:.82rem;color:var(--text-dim);margin-top:4px}
+.sr-detail{font-size:.75rem;color:var(--text-muted);margin-top:6px;line-height:1.6}
+.sr-go-btn{
+  display:block;width:100%;
+  background:var(--primary-pale);
+  border:1px solid var(--primary-dim);
+  color:var(--primary);
+  padding:8px;border-radius:8px;
+  font-size:.8rem;font-weight:600;
+  font-family:var(--font-body);
+  cursor:pointer;margin-top:10px;
+}
+
+/* ── MONTH PICKER ── */
+.mpicker-grid{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:6px;
+  margin-bottom:14px;
+}
+.mpicker-btn{
+  background:var(--surface2);
+  border:1.5px solid var(--border);
+  color:var(--text-body);
+  padding:10px 4px;border-radius:8px;
+  font-size:.82rem;font-family:var(--font-body);
+  cursor:pointer;transition:all .12s;text-align:center;
+}
+.mpicker-btn.active{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:700;box-shadow:var(--shadow-sm)}
+.mpicker-btn:active{opacity:.7}
+.ypicker-row{display:flex;align-items:center;gap:8px;justify-content:center;margin-bottom:14px}
+.ypicker-input{
+  background:var(--surface2);border:1.5px solid var(--border);
+  color:var(--text-body);padding:8px 12px;border-radius:8px;
+  font-size:1rem;font-family:var(--font-body);
+  width:90px;text-align:center;outline:none;
+}
+.ypicker-input:focus{border-color:var(--primary-light)}
+.picker-nav{
+  background:var(--primary-pale);border:1px solid var(--primary-dim);
+  color:var(--primary);width:32px;height:32px;
+  border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:.9rem;
+}
+
+/* ── SETTINGS SHEET ── */
+.settings-section{margin-bottom:18px}
+.settings-section h4{
+  font-size:.68rem;color:var(--text-muted);
+  text-transform:uppercase;letter-spacing:.07em;
+  margin-bottom:8px;
+}
+.settings-row{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 0;
+  border-bottom:1px solid var(--border);
+}
+.settings-row:last-child{border-bottom:none}
+.settings-label{font-size:.88rem;color:var(--text)}
+.settings-sub{font-size:.7rem;color:var(--text-muted);margin-top:1px}
+.toggle{
+  width:44px;height:24px;
+  background:var(--border);
+  border-radius:12px;
+  position:relative;cursor:pointer;
+  transition:background .2s;border:none;
+  flex-shrink:0;
+}
+.toggle.on{background:var(--primary-light)}
+.toggle::after{
+  content:'';position:absolute;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--text);top:2px;left:2px;
+  transition:transform .2s;
+}
+.toggle.on::after{transform:translateX(20px)}
+
+.export-btn{
+  width:100%;
+  background:var(--surface2);
+  border:1.5px solid var(--primary-dim);
+  color:var(--primary);
+  padding:11px;border-radius:10px;
+  font-size:.88rem;font-weight:600;
+  font-family:var(--font-body);
+  cursor:pointer;margin-top:6px;
+  transition:all .15s;
+}
+.export-btn:active{background:var(--primary-pale);color:var(--primary)}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;top:calc(var(--safe-top) + 70px);left:50%;
+  transform:translateX(-50%) translateY(-10px);
+  background:var(--primary);color:#ffffff;
+  box-shadow:var(--shadow-md);
+  padding:8px 18px;border-radius:20px;
+  font-size:.82rem;font-weight:700;
+  z-index:500;
+  opacity:0;pointer-events:none;
+  transition:all .25s;
+  white-space:nowrap;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-logo">🇻🇳 Lịch Việt</div>
+  <div class="header-nav">
+    <button class="nav-btn" id="btnPrev">‹</button>
+    <div class="month-year-display" id="monthYearDisplay" onclick="openPicker()"></div>
+    <button class="nav-btn" id="btnNext">›</button>
+  </div>
+  <div class="header-actions">
+    <button class="icon-btn" onclick="openSearch()" title="Tìm kiếm">🔍</button>
+    <button class="icon-btn" onclick="openSettings()" title="Cài đặt">⚙️</button>
+  </div>
+</div>
+
+<!-- LUNAR STRIP -->
+<div class="lunar-strip">
+  <div class="lunar-strip-text" id="lunarStripText"></div>
+  <div class="legend">
+    <div class="leg"><div class="leg-dot" style="background:#2e7d32"></div>Hoàng Đạo</div>
+    <div class="leg"><div class="leg-dot" style="background:#e53935"></div>Hắc Đạo</div>
+  </div>
+</div>
+
+<!-- WEEKDAYS -->
+<div class="weekdays">
+  <div class="wd">CN</div><div class="wd">T2</div><div class="wd">T3</div>
+  <div class="wd">T4</div><div class="wd">T5</div><div class="wd">T6</div>
+  <div class="wd">T7</div>
+</div>
+
+<!-- CALENDAR -->
+<div class="scroll-area">
+  <div class="cal-grid" id="calGrid"></div>
+</div>
+
+<!-- TODAY BAR -->
+<div class="today-bar">
+  <div class="today-info">
+    <div class="today-date" id="todayDateText"></div>
+    <div class="today-lunar" id="todayLunarText"></div>
+  </div>
+  <button class="add-event-btn" onclick="openDaySheet(todayD,todayM,todayY)">+ Thêm sự kiện</button>
+</div>
+
+<!-- OVERLAY -->
+<div class="sheet-overlay" id="overlay" onclick="closeAllSheets()"></div>
+
+<!-- DAY DETAIL SHEET -->
+<div class="sheet" id="daySheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title" id="daySheetTitle"></div>
+    <button class="sheet-close" onclick="closeAllSheets()">×</button>
+  </div>
+  <div class="sheet-body" id="daySheetBody"></div>
+</div>
+
+<!-- SEARCH SHEET -->
+<div class="sheet" id="searchSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">🔍 Tìm kiếm ngày</div>
+    <button class="sheet-close" onclick="closeAllSheets()">×</button>
+  </div>
+  <div class="sheet-body">
+    <div class="search-box-wrap">
+      <span class="search-icon">🔍</span>
+      <input class="search-box" id="searchInput" placeholder="VD: 1/1/2025 hoặc 15/7 âm lịch 2025" oninput="doSearch()">
+    </div>
+    <div class="search-hint">
+      • Nhập ngày dương: <strong>30/4/2026</strong> hoặc <strong>2026-04-30</strong><br>
+      • Nhập ngày âm: <strong>âm 15/7/2025</strong> hoặc <strong>15 tháng 7 âm 2025</strong>
+    </div>
+    <div id="searchResult"></div>
+  </div>
+</div>
+
+<!-- MONTH PICKER SHEET -->
+<div class="sheet" id="pickerSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">Chọn tháng / năm</div>
+    <button class="sheet-close" onclick="closeAllSheets()">×</button>
+  </div>
+  <div class="sheet-body">
+    <div class="ypicker-row">
+      <button class="picker-nav" onclick="pickerYear--; renderPicker()">‹</button>
+      <input class="ypicker-input" id="ypickerInput" type="number" min="1960" max="2099" oninput="pickerYear=+this.value;renderPicker()">
+      <button class="picker-nav" onclick="pickerYear++; renderPicker()">›</button>
+    </div>
+    <div class="mpicker-grid" id="mpickerGrid"></div>
+    <button class="form-submit" onclick="applyPicker()">Xem tháng này</button>
+  </div>
+</div>
+
+<!-- SETTINGS SHEET -->
+<div class="sheet" id="settingsSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">⚙️ Cài đặt</div>
+    <button class="sheet-close" onclick="closeAllSheets()">×</button>
+  </div>
+  <div class="sheet-body">
+    <div class="settings-section">
+      <h4>Hiển thị</h4>
+      <div class="settings-row">
+        <div><div class="settings-label">Hoàng Đạo / Hắc Đạo</div><div class="settings-sub">Chấm màu trên mỗi ngày</div></div>
+        <div class="toggle on" id="togHD" onclick="toggleSetting('showHD')"></div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Can Chi ngày</div><div class="settings-sub">Giáp Tý, Ất Sửu...</div></div>
+        <div class="toggle on" id="togCC" onclick="toggleSetting('showCC')"></div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Ngày lễ âm lịch</div><div class="settings-sub">Tết, Rằm, Giỗ Tổ...</div></div>
+        <div class="toggle on" id="togLE" onclick="toggleSetting('showLE')"></div>
+      </div>
+    </div>
+    <div class="settings-section">
+      <h4>Dữ liệu</h4>
+      <button class="export-btn" onclick="openImport()">📥 Import từ Google Calendar (.ics)</button>
+      <button class="export-btn" style="margin-top:8px" onclick="exportICS()">📤 Xuất file .ics sang Google Calendar</button>
+      <button class="export-btn" style="margin-top:8px;border-color:var(--red-soft);color:var(--red-soft)" onclick="clearAllEvents()">🗑️ Xóa tất cả sự kiện</button>
+    </div>
+    <div class="settings-section">
+      <h4>Về ứng dụng</h4>
+      <div class="settings-row">
+        <div><div class="settings-label">Thuật toán</div><div class="settings-sub">Hồ Ngọc Đức / Jean Meeus 1998</div></div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Múi giờ</div><div class="settings-sub">UTC+7 — Kinh tuyến 105° Đông</div></div>
+      </div>
+      <div class="settings-row">
+        <div><div class="settings-label">Phạm vi</div><div class="settings-sub">1960 – 2099</div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- IMPORT SHEET -->
+<div class="sheet" id="importSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-header">
+    <div class="sheet-title">📥 Import từ Google Calendar</div>
+    <button class="sheet-close" onclick="closeAllSheets()">×</button>
+  </div>
+  <div class="sheet-body">
+
+    <!-- Step 1: hướng dẫn -->
+    <div id="importStep1">
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:14px">
+        <div style="font-size:.8rem;font-weight:700;color:var(--gold-light);margin-bottom:10px">📋 Cách export từ Google Calendar</div>
+        <div style="font-size:.78rem;color:var(--text-dim);line-height:1.8">
+          <b style="color:var(--text)">Bước 1.</b> Mở <span style="color:var(--gold)">calendar.google.com</span> trên máy tính<br>
+          <b style="color:var(--text)">Bước 2.</b> Click ⚙️ → <b>Cài đặt</b><br>
+          <b style="color:var(--text)">Bước 3.</b> Menu trái → <b>Nhập và xuất</b><br>
+          <b style="color:var(--text)">Bước 4.</b> Click <b>Xuất</b> → tải về file <code style="background:var(--surface3);padding:1px 5px;border-radius:3px">.zip</code><br>
+          <b style="color:var(--text)">Bước 5.</b> Giải nén → chọn file <code style="background:var(--surface3);padding:1px 5px;border-radius:3px">.ics</code> bên dưới
+        </div>
+      </div>
+
+      <!-- File picker -->
+      <div id="importDropZone"
+        style="border:2px dashed var(--border);border-radius:12px;padding:28px 16px;text-align:center;cursor:pointer;transition:all .2s"
+        onclick="document.getElementById('icsFileInput').click()"
+        ondragover="event.preventDefault();this.style.borderColor='var(--primary-light)'"
+        ondragleave="this.style.borderColor='var(--border)'"
+        ondrop="handleFileDrop(event)">
+        <div style="font-size:2rem;margin-bottom:8px">📂</div>
+        <div style="font-size:.88rem;color:var(--text-dim);font-weight:600">Chọn file .ics hoặc kéo thả vào đây</div>
+        <div style="font-size:.72rem;color:var(--text-muted);margin-top:4px">Hỗ trợ file từ Google Calendar, Apple Calendar, Outlook</div>
+      </div>
+      <input type="file" id="icsFileInput" accept=".ics,.ical" style="display:none" onchange="handleFileSelect(event)">
+    </div>
+
+    <!-- Step 2: Preview -->
+    <div id="importStep2" style="display:none">
+      <div id="importSummary" style="margin-bottom:12px"></div>
+      <div id="importPreview" style="max-height:280px;overflow-y:auto"></div>
+      <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="export-btn" style="flex:1" onclick="cancelImport()">← Chọn lại</button>
+        <button class="form-submit" style="flex:2" id="importConfirmBtn" onclick="confirmImport()">Nhập sự kiện</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Done -->
+    <div id="importStep3" style="display:none;text-align:center;padding:20px 0">
+      <div style="font-size:3rem;margin-bottom:12px">✅</div>
+      <div id="importDoneText" style="font-size:1rem;font-weight:700;color:var(--gold-light)"></div>
+      <div id="importDoneSub" style="font-size:.78rem;color:var(--text-dim);margin-top:6px"></div>
+      <button class="form-submit" style="margin-top:18px;width:100%" onclick="closeAllSheets();render()">Xem lịch</button>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ═══════════════════════════════════════════════════
+// MODULE 1: THUẬT TOÁN HỒ NGỌC ĐỨC (Jean Meeus)
+// UTC+7 — Kinh tuyến 105° Đông — Lịch Việt Nam
+// ═══════════════════════════════════════════════════
+const TZ=7, PI=Math.PI;
+const F=Math.floor;
+
+function jdFromDate(d,m,y){
+  let a=F((14-m)/12),yy=y+4800-a,mm=m+12*a-3;
+  let j=d+F((153*mm+2)/5)+365*yy+F(yy/4)-F(yy/100)+F(yy/400)-32045;
+  return j<2299161?d+F((153*mm+2)/5)+365*yy+F(yy/4)-32083:j;
+}
+function jdToDate(jd){
+  let a,b,c,d,e,m;
+  if(jd>2299160){a=jd+32044;b=F((4*a+3)/146097);c=a-F(b*146097/4)}else{b=0;c=jd+32082}
+  d=F((4*c+3)/1461);e=c-F(1461*d/4);m=F((5*e+2)/153);
+  return{d:e-F((153*m+2)/5)+1,m:m+3-12*F(m/10),y:b*100+d-4800+F(m/10)};
+}
+function newMoonDay(k){
+  let T=k/1236.85,T2=T*T,T3=T2*T,dr=PI/180;
+  let J=2415020.75933+29.53058868*k+0.0001178*T2-0.000000155*T3
+        +0.00033*Math.sin((166.56+132.87*T-0.009173*T2)*dr);
+  let M=359.2242+29.10535608*k-0.0000333*T2-0.00000347*T3;
+  let Mp=306.0253+385.81691806*k+0.0107306*T2+0.00001236*T3;
+  let Fv=21.2964+390.67050646*k-0.0016528*T2-0.00000239*T3;
+  let C=(0.1734-0.000393*T)*Math.sin(M*dr)+0.0021*Math.sin(2*dr*M)
+       -0.4068*Math.sin(Mp*dr)+0.0161*Math.sin(2*dr*Mp)-0.0004*Math.sin(3*dr*Mp)
+       +0.0104*Math.sin(2*dr*Fv)-0.0051*Math.sin(dr*(M+Mp))-0.0074*Math.sin(dr*(M-Mp))
+       +0.0004*Math.sin(dr*(2*Fv+M))-0.0004*Math.sin(dr*(2*Fv-M))
+       -0.0006*Math.sin(dr*(2*Fv+Mp))+0.001*Math.sin(dr*(2*Fv-Mp))+0.0005*Math.sin(dr*(2*Mp+M));
+  let dt=T<-11?0.001+0.000839*T+0.0002261*T2-0.00000845*T3-0.000000081*T*T3
+              :-0.000278+0.000265*T+0.000262*T2;
+  return F(J+C-dt+0.5+TZ/24);
+}
+function sunLong(jdn){
+  let T=(jdn-2451545.5-TZ/24)/36525,T2=T*T,dr=PI/180;
+  let M=357.5291+35999.0503*T-0.0001559*T2-0.00000048*T*T2;
+  let L=280.46645+36000.76983*T+0.0003032*T2;
+  let DL=(1.9146-0.004817*T-0.000014*T2)*Math.sin(dr*M)
+        +(0.019993-0.000101*T)*Math.sin(2*dr*M)+0.00029*Math.sin(3*dr*M);
+  let lo=(L+DL)*dr; lo-=PI*2*F(lo/(PI*2));
+  return F(lo/PI*6);
+}
+function lunarMonth11(y){
+  let k=F((jdFromDate(31,12,y)-2415021)/29.530588853);
+  let nm=newMoonDay(k);
+  return sunLong(nm)>=9?newMoonDay(k-1):nm;
+}
+function leapOffset(a11){
+  let k=F((a11-2415021.076998695)/29.530588853+0.5),i=1,last=0;
+  let arc=sunLong(newMoonDay(k+i));
+  while(true){last=arc;i++;arc=sunLong(newMoonDay(k+i));if(arc===last||i>=14)break}
+  return i-1;
+}
+function solar2lunar(d,m,y){
+  let jd=jdFromDate(d,m,y);
+  let k=F((jd-2415021.076998695)/29.530588853);
+  let ms=newMoonDay(k+1); if(ms>jd)ms=newMoonDay(k); if(ms>jd)ms=newMoonDay(k-1);
+  let a11=lunarMonth11(y),b11=a11,ly=y;
+  if(a11>=ms){ly=y;a11=lunarMonth11(y-1)}else{ly=y+1;b11=lunarMonth11(y+1)}
+  let ld=jd-ms+1,diff=F((ms-a11)/29),leap=false,lm=diff+11;
+  if(b11-a11>365){let lo=leapOffset(a11);if(diff>=lo){lm=diff+10;if(diff===lo)leap=true}}
+  if(lm>12)lm-=12;
+  if(lm>=11&&diff<4)ly--;
+  return{ld,lm,ly,leap};
+}
+function lunar2solar(ld,lm,ly,isLeap=false){
+  let a11=lm<11?lunarMonth11(ly-1):lunarMonth11(ly);
+  let b11=lm<11?lunarMonth11(ly):lunarMonth11(ly+1);
+  let k=F((a11-2415021.076998695)/29.530588853+0.5);
+  let off=lm-11; if(off<0)off+=12;
+  if(b11-a11>365){let lo=leapOffset(a11); if(isLeap&&lm!==(lo-2+12)%12)return null; if(isLeap||off>=lo)off++;}
+  return jdToDate(newMoonDay(k+off)+ld-1);
+}
+
+// ═══════════════════════════════════════════════════
+// MODULE 2: CAN CHI & HOÀNG ĐẠO
+// ═══════════════════════════════════════════════════
+const TC=['Giáp','Ất','Bính','Đinh','Mậu','Kỷ','Canh','Tân','Nhâm','Quý'];
+const DC=['Tý','Sửu','Dần','Mão','Thìn','Tỵ','Ngọ','Mùi','Thân','Dậu','Tuất','Hợi'];
+const GIAP={Tý:'🐭',Sửu:'🐮',Dần:'🐯',Mão:'🐰',Thìn:'🐲',Tỵ:'🐍',Ngọ:'🐴',Mùi:'🐑',Thân:'🐵',Dậu:'🐓',Tuất:'🐶',Hợi:'🐷'};
+const THANG=['','Giêng','Hai','Ba','Tư','Năm','Sáu','Bảy','Tám','Chín','Mười','Mười Một','Chạp'];
+const NGAY=['','Mồng Một','Mồng Hai','Mồng Ba','Mồng Bốn','Mồng Năm','Mồng Sáu','Mồng Bảy','Mồng Tám','Mồng Chín','Mồng Mười','Mười Một','Mười Hai','Mười Ba','Mười Bốn','Rằm','Mười Sáu','Mười Bảy','Mười Tám','Mười Chín','Hai Mươi','Hai Mốt','Hai Hai','Hai Ba','Hai Tư','Hai Lăm','Hai Sáu','Hai Bảy','Hai Tám','Hai Chín','Ba Mươi'];
+const DOW=['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+
+function canChiNam(y){let chi=DC[(y-4+4000)%12];return TC[(y-4+4000)%10]+' '+chi+' '+GIAP[chi]}
+function canChiNgay(d,m,y){let jd=jdFromDate(d,m,y);return TC[(jd+9)%10]+' '+DC[(jd+1)%12]}
+const HD_OFF=new Set([1,2,3,7,8,10]);
+function isHoangDao(d,m,y){
+  let{lm}=solar2lunar(d,m,y);
+  let ct=(lm+1)%12, cn=(jdFromDate(d,m,y)+1)%12;
+  return HD_OFF.has((cn-ct+12)%12);
+}
+
+// ═══════════════════════════════════════════════════
+// MODULE 3: NGÀY LỄ
+// ═══════════════════════════════════════════════════
+const LE_AM={'1-1':'🎊 Tết Nguyên Đán','1-2':'🎊 Mồng Hai Tết','1-3':'🎊 Mồng Ba Tết',
+  '1-15':'🏮 Nguyên Tiêu','3-10':'🎌 Giỗ Tổ Hùng Vương','4-15':'☸️ Phật Đản',
+  '5-5':'🌿 Tết Đoan Ngọ','7-7':'💫 Thất Tịch','7-15':'🪔 Lễ Vu Lan',
+  '8-15':'🌕 Tết Trung Thu','9-9':'🍂 Trùng Cửu',
+  '12-23':'🍊 Ông Táo về Trời','12-29':'🎆 Giao Thừa','12-30':'🎆 Giao Thừa'};
+const LE_DUONG={'1-1':'🎉 Tết Dương lịch','4-30':'🎗️ Ngày Giải Phóng',
+  '5-1':'👷 Quốc tế Lao động','9-2':'🎌 Quốc Khánh','12-25':'🎄 Giáng Sinh'};
+
+function getLe(d,m,y){
+  let{ld,lm,leap}=solar2lunar(d,m,y),evs=[];
+  if(!leap&&LE_AM[`${lm}-${ld}`])evs.push({name:LE_AM[`${lm}-${ld}`],type:'holiday',src:'am'});
+  if(LE_DUONG[`${m}-${d}`])evs.push({name:LE_DUONG[`${m}-${d}`],type:'holiday',src:'duong'});
+  return evs;
+}
+
+// ═══════════════════════════════════════════════════
+// MODULE 4: EVENT STORE (localStorage)
+// ═══════════════════════════════════════════════════
+const STORE_KEY='lichviet_events_v1';
+let events={};
+function loadEvents(){try{events=JSON.parse(localStorage.getItem(STORE_KEY)||'{}')}catch{events={}}}
+function saveEvents(){localStorage.setItem(STORE_KEY,JSON.stringify(events))}
+function dayKey(d,m,y){return`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
+function getEvents(d,m,y){return events[dayKey(d,m,y)]||[]}
+function addEvent(d,m,y,ev){
+  let k=dayKey(d,m,y);
+  if(!events[k])events[k]=[];
+  events[k].push({...ev,id:Date.now()});
+  saveEvents();
+}
+function delEvent(d,m,y,id){
+  let k=dayKey(d,m,y);
+  if(events[k])events[k]=events[k].filter(e=>e.id!==id);
+  saveEvents();
+}
+function clearAllEvents(){
+  if(confirm('Xóa tất cả sự kiện đã tạo?')){events={};saveEvents();render();toast('Đã xóa tất cả')}
+}
+loadEvents();
+
+// ═══════════════════════════════════════════════════
+// MODULE 5: SETTINGS
+// ═══════════════════════════════════════════════════
+const SETTINGS_KEY='lichviet_settings_v1';
+let settings={showHD:true,showCC:true,showLE:true};
+function loadSettings(){try{Object.assign(settings,JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}'))}catch{}}
+function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings))}
+function toggleSetting(k){
+  settings[k]=!settings[k];saveSettings();
+  document.getElementById('tog'+k.replace('show','')).classList.toggle('on',settings[k]);
+  render();
+}
+function applySettingsUI(){
+  document.getElementById('togHD').classList.toggle('on',settings.showHD);
+  document.getElementById('togCC').classList.toggle('on',settings.showCC);
+  document.getElementById('togLE').classList.toggle('on',settings.showLE);
+}
+loadSettings();
+
+// ═══════════════════════════════════════════════════
+// MODULE 6: STATE & RENDER
+// ═══════════════════════════════════════════════════
+const now=new Date();
+let todayD=now.getDate(),todayM=now.getMonth()+1,todayY=now.getFullYear();
+let curM=todayM,curY=todayY;
+
+function render(){
+  const grid=document.getElementById('calGrid');
+  grid.innerHTML='';
+  const fd=new Date(curY,curM-1,1).getDay();
+  const dim=new Date(curY,curM,0).getDate();
+  const dprev=new Date(curY,curM-1,0).getDate();
+  const total=Math.ceil((fd+dim)/7)*7;
+
+  // Header strip
+  const mid=solar2lunar(15,curM,curY);
+  const namCC=canChiNam(mid.ly);
+  document.getElementById('monthYearDisplay').textContent=`Tháng ${curM} / ${curY}`;
+  document.getElementById('lunarStripText').innerHTML=
+    `T.${THANG[mid.lm]}${mid.leap?' Nhuận':''} âm – <strong>${namCC}</strong>`;
+
+  // Today bar
+  const tLunar=solar2lunar(todayD,todayM,todayY);
+  const tCC=canChiNam(tLunar.ly);
+  document.getElementById('todayDateText').textContent=
+    `${DOW[now.getDay()]}, ${todayD}/${todayM}/${todayY}`;
+  document.getElementById('todayLunarText').textContent=
+    `${NGAY[tLunar.ld]||tLunar.ld} ${tLunar.lm===1?'Tháng Giêng':'Tháng '+THANG[tLunar.lm]}${tLunar.leap?' Nhuận':''} – ${tCC}`;
+
+  for(let i=0;i<total;i++){
+    let d,m,y,other=false;
+    if(i<fd){d=dprev-fd+i+1;m=curM-1;y=curY;if(m<1){m=12;y--}other=true}
+    else if(i>=fd+dim){d=i-fd-dim+1;m=curM+1;y=curY;if(m>12){m=1;y++}other=true}
+    else{d=i-fd+1;m=curM;y=curY}
+
+    const lunar=solar2lunar(d,m,y);
+    const hd=isHoangDao(d,m,y);
+    const ccN=canChiNgay(d,m,y);
+    const holidays=getLe(d,m,y);
+    const userEvs=getEvents(d,m,y);
+    const allEvs=[...holidays,...userEvs];
+    const isToday=d===todayD&&m===todayM&&y===todayY;
+    const dow=new Date(y,m-1,d).getDay();
+
+    const cell=document.createElement('div');
+    cell.className='day'+(other?' other':'')+(dow===0?' sun':'')+(dow===6?' sat':'')+
+      (isToday?' today':'')+(allEvs.length?' has-event':'');
+
+    let lunarHTML='';
+    if(lunar.ld===1)lunarHTML=`<div class="lunar-num mong1">Mồng 1<br><span style="font-size:.55rem;font-weight:400">T.${THANG[lunar.lm]}${lunar.leap?'⁺':''}</span></div>`;
+    else if(lunar.ld===15)lunarHTML=`<div class="lunar-num ram">Rằm</div>`;
+    else lunarHTML=`<div class="lunar-num">${lunar.ld}<span style="font-weight:400;opacity:.7">/${THANG[lunar.lm]}${lunar.leap?'⁺':''}</span></div>`;
+
+    let eventHTML='';
+    if(settings.showLE&&holidays.length)
+      eventHTML+=`<div class="event-label">${holidays[0].name}</div>`;
+    if(userEvs.length)
+      eventHTML+=`<div class="event-dot-row">${userEvs.slice(0,3).map(()=>'<div class="event-dot"></div>').join('')}</div>`;
+
+    // Thứ Hai: thêm icon danh ngôn nhỏ
+    const mondayBadge = (!other && dow===1)
+      ? `<div style="font-size:.55rem;color:var(--primary-light);margin-top:auto;padding-top:2px;opacity:.8">💡</div>`
+      : '';
+
+    cell.innerHTML=`
+      <div class="day-top">
+        <span class="solar">${d}</span>
+        ${settings.showHD?`<div class="hd-dot" style="background:${hd?'#2e7d32':'#e53935'}"></div>`:''}
+      </div>
+      ${settings.showCC?`<div class="can-chi-day">${ccN}</div>`:''}
+      ${lunarHTML}
+      ${eventHTML}
+      ${mondayBadge}
+    `;
+    cell.onclick=()=>openDaySheet(d,m,y);
+    grid.appendChild(cell);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// MODULE 7: SHEETS
+// ═══════════════════════════════════════════════════
+function openSheet(id){
+  closeAllSheets(false);
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById(id).classList.add('open');
+}
+function closeAllSheets(full=true){
+  if(full)document.getElementById('overlay').classList.remove('open');
+  ['daySheet','searchSheet','pickerSheet','settingsSheet','importSheet'].forEach(s=>
+    document.getElementById(s).classList.remove('open'));
+}
+
+// Day Sheet
+// ═══════════════════════════════════════════════════
+// MODULE: DANH NGÔN THỨ HAI
+// Hiển thị 1 câu danh ngôn mỗi khi click vào Thứ Hai
+// ═══════════════════════════════════════════════════
+const QUOTES = [
+  { text: "Thành công không phải là chìa khóa của hạnh phúc. Hạnh phúc mới là chìa khóa của thành công.", author: "Albert Schweitzer" },
+  { text: "Hãy là sự thay đổi mà bạn muốn nhìn thấy trên thế giới.", author: "Mahatma Gandhi" },
+  { text: "Học, học nữa, học mãi.", author: "V. I. Lenin" },
+  { text: "Điều duy nhất cản trở tôi học hỏi là nền giáo dục của tôi.", author: "Albert Einstein" },
+  { text: "Đừng xem đồng hồ — hãy làm điều mà nó làm, cứ tiếp tục.", author: "Sam Levenson" },
+  { text: "Cuộc sống không phải là chờ đợi cơn bão qua đi, mà là học cách nhảy múa trong mưa.", author: "Vivian Greene" },
+  { text: "Ngàn dặm bắt đầu từ một bước chân.", author: "Lão Tử" },
+  { text: "Không có gì là không thể với người có đủ nghị lực.", author: "Napoléon Bonaparte" },
+  { text: "Chính trong khó khăn mới phát sinh ra sáng kiến.", author: "Albert Einstein" },
+  { text: "Hành động là nền tảng của mọi thành công.", author: "Pablo Picasso" },
+  { text: "Nếu bạn muốn đi nhanh, hãy đi một mình. Nếu bạn muốn đi xa, hãy đi cùng nhau.", author: "Tục ngữ châu Phi" },
+  { text: "Thất bại là mẹ thành công.", author: "Tục ngữ Việt Nam" },
+  { text: "Gieo suy nghĩ, gặt hành động; gieo hành động, gặt thói quen; gieo thói quen, gặt tính cách; gieo tính cách, gặt số phận.", author: "Stephen Covey" },
+  { text: "Người thành công không phải là người không bao giờ thất bại, mà là người đứng dậy sau mỗi lần vấp ngã.", author: "Vince Lombardi" },
+  { text: "Sức mạnh không đến từ thể chất. Nó đến từ ý chí không khuất phục.", author: "Mahatma Gandhi" },
+  { text: "Đừng đếm những gì bạn đã mất, hãy trân trọng những gì bạn đang có.", author: "Tục ngữ" },
+  { text: "Một ngàn ngày học không bằng một ngày thực hành.", author: "Tục ngữ Nhật Bản" },
+  { text: "Tuổi trẻ là mùa xuân của cuộc đời.", author: "Victor Hugo" },
+  { text: "Không có con đường tắt đến nơi xứng đáng đến.", author: "Beverly Sills" },
+  { text: "Điều khiến bạn khác biệt có thể là thứ khiến bạn trở nên mạnh mẽ.", author: "Meryl Streep" },
+  { text: "Mỗi buổi sáng chúng ta có hai lựa chọn: tiếp tục ngủ với những ước mơ của mình, hoặc thức dậy và đuổi theo chúng.", author: "Kristin Anderson" },
+  { text: "Bí quyết để tiến lên phía trước là bắt đầu.", author: "Mark Twain" },
+  { text: "Nước chảy đá mòn.", author: "Tục ngữ Việt Nam" },
+  { text: "Cây muốn lặng mà gió chẳng dừng. Người muốn hiếu mà cha mẹ chẳng còn.", author: "Cổ ngữ" },
+  { text: "Học mà không suy nghĩ thì uổng công. Suy nghĩ mà không học thì nguy hiểm.", author: "Khổng Tử" },
+  { text: "Đừng sợ chậm, chỉ sợ đứng yên.", author: "Tục ngữ Trung Hoa" },
+  { text: "Biết người là khôn ngoan. Biết mình là giác ngộ.", author: "Lão Tử" },
+  { text: "Khó khăn nào rồi cũng qua, cuộc sống tiếp tục.", author: "Tục ngữ" },
+  { text: "Người có chí thì nên.", author: "Tục ngữ Việt Nam" },
+  { text: "Mỗi ngày là một trang mới trong cuốn sách của cuộc đời bạn — hãy viết thật đẹp.", author: "Khuyết danh" },
+  { text: "Kẻ thù lớn nhất của thành công là sự sợ hãi thất bại.", author: "Sven Goran Eriksson" },
+  { text: "Tương lai thuộc về những người tin vào vẻ đẹp của những giấc mơ.", author: "Eleanor Roosevelt" },
+  { text: "Đừng chờ đến lúc hoàn hảo mới bắt đầu, hãy bắt đầu rồi làm cho nó hoàn hảo.", author: "Anne Lamott" },
+  { text: "Trong mọi khó khăn đều ẩn chứa một cơ hội.", author: "Albert Einstein" },
+  { text: "Hành trình vạn dặm bắt đầu từ bước đi đầu tiên.", author: "Lão Tử" },
+  { text: "Sống không phải là tồn tại, sống là hoạt động.", author: "Victor Hugo" },
+  { text: "Chim khôn hót tiếng rảnh rang, người khôn nói tiếng dịu dàng dễ nghe.", author: "Ca dao Việt Nam" },
+  { text: "Uốn cây từ thuở còn non, dạy con từ thuở con còn thơ ngây.", author: "Ca dao Việt Nam" },
+  { text: "Dù ai nói ngả nói nghiêng, lòng ta vẫn vững như kiềng ba chân.", author: "Ca dao Việt Nam" },
+  { text: "Có công mài sắt, có ngày nên kim.", author: "Tục ngữ Việt Nam" },
+  { text: "Muốn lành nghề, chớ nề học hỏi.", author: "Tục ngữ Việt Nam" },
+  { text: "Tiên học lễ, hậu học văn.", author: "Tục ngữ Việt Nam" },
+  { text: "Thứ Hai bắt đầu, cả tuần thành công!", author: "Lịch Việt" },
+  { text: "Đừng để hôm qua chiếm quá nhiều hôm nay.", author: "Will Rogers" },
+  { text: "Người làm được điều thì làm, người không làm được thì dạy.", author: "George Bernard Shaw" },
+  { text: "Sự chuẩn bị là bí quyết của thành công.", author: "Alexander Graham Bell" },
+  { text: "Không bao giờ là quá muộn để trở thành người bạn muốn.", author: "George Eliot" },
+  { text: "Hãy sống như thể bạn chết ngày mai. Hãy học như thể bạn sống mãi mãi.", author: "Mahatma Gandhi" },
+  { text: "Cơ hội không tự gõ cửa, bạn phải gõ vào cánh cửa của cơ hội.", author: "Milton Berle" },
+  { text: "Mọi thành tựu lớn đều bắt đầu từ quyết tâm thử một lần.", author: "Eugenie Clark" },
+];
+
+// Lấy danh ngôn theo ngày (seed = ngày trong năm → luôn nhất quán mỗi Thứ Hai)
+function getQuoteForDate(d, m, y) {
+  const dayOfYear = Math.floor((new Date(y, m-1, d) - new Date(y, 0, 0)) / 86400000);
+  const idx = (y * 31 + dayOfYear) % QUOTES.length;
+  return { ...QUOTES[idx], idx };
+}
+
+// Lấy danh ngôn ngẫu nhiên khác (khi bấm refresh)
+function getNextQuote(currentIdx) {
+  let next = (currentIdx + 1 + Math.floor(Math.random() * 5)) % QUOTES.length;
+  return { ...QUOTES[next], idx: next };
+}
+
+let currentQuoteIdx = 0;
+
+function renderQuoteCard(d, m, y) {
+  const q = getQuoteForDate(d, m, y);
+  currentQuoteIdx = q.idx;
+  return buildQuoteHTML(q, d, m, y);
+}
+
+function buildQuoteHTML(q, d, m, y) {
+  return `
+    <div class="quote-card" id="quoteCard">
+      <button class="quote-refresh" onclick="refreshQuote(${d},${m},${y})" title="Danh ngôn khác">↻</button>
+      <div class="quote-label">💡 Danh ngôn Thứ Hai</div>
+      <div class="quote-text" id="quoteText">${q.text}</div>
+      <div class="quote-author" id="quoteAuthor">— ${q.author}</div>
+    </div>`;
+}
+
+function refreshQuote(d, m, y) {
+  const q = getNextQuote(currentQuoteIdx);
+  currentQuoteIdx = q.idx;
+  // Animate
+  const card = document.getElementById('quoteCard');
+  if (card) {
+    card.style.opacity = '0';
+    card.style.transform = 'translateY(6px)';
+    setTimeout(() => {
+      document.getElementById('quoteText').textContent = q.text;
+      document.getElementById('quoteAuthor').textContent = '— ' + q.author;
+      card.style.transition = 'opacity .25s, transform .25s';
+      card.style.opacity = '1';
+      card.style.transform = 'translateY(0)';
+    }, 180);
+  }
+}
+
+function openDaySheet(d,m,y){
+  const lunar=solar2lunar(d,m,y);
+  const hd=isHoangDao(d,m,y);
+  const ccN=canChiNgay(d,m,y);
+  const ccY=canChiNam(lunar.ly);
+  const dow=DOW[new Date(y,m-1,d).getDay()];
+  const holidays=getLe(d,m,y);
+  const userEvs=getEvents(d,m,y);
+  const thangStr=`Tháng ${THANG[lunar.lm]}${lunar.leap?' Nhuận':''}`;
+  const ngayStr=NGAY[lunar.ld]||String(lunar.ld);
+
+  document.getElementById('daySheetTitle').textContent=`${d} Tháng ${m} Năm ${y}`;
+
+  // Danh ngôn chỉ hiện vào Thứ Hai (getDay() === 1)
+  const isMonday = new Date(y, m-1, d).getDay() === 1;
+  const quoteHTML = isMonday ? renderQuoteCard(d, m, y) : '';
+
+  const allEvs=[...holidays,...userEvs];
+  const evHTML=allEvs.length?`
+    <div class="day-events-list">
+      <h4>Sự kiện (${allEvs.length})</h4>
+      ${holidays.map(e=>`<div class="event-item holiday"><span class="event-name">${e.name}</span></div>`).join('')}
+      ${userEvs.map(e=>`<div class="event-item">
+        <div style="flex:1">
+          <div class="event-name">${e.name}</div>
+          ${e.time?`<div class="event-time">⏰ ${e.time}</div>`:''}
+          ${e.note?`<div class="event-time">📝 ${e.note}</div>`:''}
+        </div>
+        <button class="event-del" onclick="delEventUI(${d},${m},${y},${e.id})">🗑</button>
+      </div>`).join('')}
+    </div>`:'';
+
+  document.getElementById('daySheetBody').innerHTML=`
+    <div class="detail-solar-big">${d}</div>
+    <div class="detail-dow">${dow}, Tháng ${m} Năm ${y}</div>
+    ${quoteHTML}
+    <div class="detail-cards">
+      <div class="dcard">
+        <div class="dcard-label">Ngày âm lịch</div>
+        <div class="dcard-value gold">${ngayStr} ${thangStr}</div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-label">Năm</div>
+        <div class="dcard-value gold">${ccY}</div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-label">Can Chi ngày</div>
+        <div class="dcard-value">${ccN}</div>
+      </div>
+      <div class="dcard">
+        <div class="dcard-label">Hoàng / Hắc Đạo</div>
+        <div class="dcard-value ${hd?'hoang':'hac'}">${hd?'● Hoàng Đạo':'● Hắc Đạo'}</div>
+      </div>
+    </div>
+    ${evHTML}
+    <div class="add-event-form">
+      <h4>➕ Thêm sự kiện ngày ${d}/${m}/${y}</h4>
+      <input class="form-input" id="evName" placeholder="Tên sự kiện *">
+      <div class="form-row">
+        <input class="form-input" id="evTime" placeholder="Giờ (vd: 09:00)" type="time">
+        <input class="form-input" id="evNote" placeholder="Ghi chú">
+      </div>
+      <button class="form-submit" onclick="submitEvent(${d},${m},${y})">Lưu sự kiện</button>
+    </div>
+  `;
+  openSheet('daySheet');
+}
+
+function delEventUI(d,m,y,id){
+  delEvent(d,m,y,id);
+  openDaySheet(d,m,y);
+  render();
+}
+
+function submitEvent(d,m,y){
+  const name=document.getElementById('evName').value.trim();
+  if(!name){toast('Vui lòng nhập tên sự kiện');return}
+  addEvent(d,m,y,{name,time:document.getElementById('evTime').value,note:document.getElementById('evNote').value.trim()});
+  render();
+  openDaySheet(d,m,y);
+  toast('Đã lưu sự kiện ✓');
+}
+
+// Search
+function openSearch(){openSheet('searchSheet');setTimeout(()=>document.getElementById('searchInput').focus(),300)}
+
+function doSearch(){
+  const q=document.getElementById('searchInput').value.trim();
+  const el=document.getElementById('searchResult');
+  if(!q){el.innerHTML='';return}
+
+  let d,m,y,ld,lm,ly,isLunar=false;
+
+  // Try lunar: "âm 15/7/2025" or "15 tháng 7 âm 2025"
+  let lunarMatch=q.match(/(?:âm\s+)?(\d{1,2})[\/\-\s]+(?:tháng\s+)?(\d{1,2})[\/\-\s]+(\d{4})(?:\s+âm)?/i);
+  if(q.toLowerCase().includes('âm')&&lunarMatch){
+    ld=+lunarMatch[1];lm=+lunarMatch[2];ly=+lunarMatch[3];isLunar=true;
+    const sol=lunar2solar(ld,lm,ly);
+    if(!sol){el.innerHTML=`<div class="search-result" style="color:var(--red-soft)">Không tìm thấy ngày âm ${ld}/${lm}/${ly}</div>`;return}
+    d=sol.d;m=sol.m;y=sol.y;
+  } else {
+    // Try solar: "30/4/2026" or "2026-04-30"
+    let sm=q.match(/(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/)||q.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+    if(!sm){el.innerHTML='';return}
+    if(sm[1].length===4){y=+sm[1];m=+sm[2];d=+sm[3]}else{d=+sm[1];m=+sm[2];y=+sm[3]}
+  }
+
+  if(!d||!m||!y||m<1||m>12||d<1||d>31){el.innerHTML='';return}
+  const lunar=solar2lunar(d,m,y);
+  const hd=isHoangDao(d,m,y);
+  const ccN=canChiNgay(d,m,y);
+  const ccY=canChiNam(lunar.ly);
+  const dow=DOW[new Date(y,m-1,d).getDay()];
+
+  el.innerHTML=`<div class="search-result">
+    <div class="sr-solar">${dow}, ${d}/${m}/${y}</div>
+    <div class="sr-lunar">${NGAY[lunar.ld]||lunar.ld} Tháng ${THANG[lunar.lm]}${lunar.leap?' Nhuận':''} năm ${ccY}</div>
+    <div class="sr-detail">
+      Can Chi ngày: <strong>${ccN}</strong> &nbsp;|&nbsp;
+      ${hd?'<span style="color:#2e7d32;font-weight:600">● Hoàng Đạo</span>':'<span style="color:#e53935;font-weight:600">● Hắc Đạo</span>'}
+    </div>
+    <button class="sr-go-btn" onclick="goToDate(${d},${m},${y})">📅 Xem trong lịch</button>
+  </div>`;
+}
+
+function goToDate(d,m,y){
+  curM=m;curY=y;render();closeAllSheets();
+  setTimeout(()=>{
+    const cells=document.querySelectorAll('.day:not(.other)');
+    cells.forEach(c=>{if(c.querySelector('.solar')?.textContent==d)c.scrollIntoView({behavior:'smooth',block:'center'})});
+  },100);
+}
+
+// Picker
+let pickerYear=curY,pickerMonth=curM;
+function openPicker(){pickerYear=curY;pickerMonth=curM;renderPicker();openSheet('pickerSheet')}
+function renderPicker(){
+  document.getElementById('ypickerInput').value=pickerYear;
+  const grid=document.getElementById('mpickerGrid');
+  grid.innerHTML=['Tháng 1','Tháng 2','Tháng 3','Tháng 4','Tháng 5','Tháng 6',
+    'Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12']
+    .map((n,i)=>`<button class="mpicker-btn${i+1===pickerMonth?' active':''}" onclick="pickerMonth=${i+1};renderPicker()">${n}</button>`).join('');
+}
+function applyPicker(){curM=pickerMonth;curY=pickerYear;render();closeAllSheets()}
+
+// Settings
+function openSettings(){applySettingsUI();openSheet('settingsSheet')}
+
+// ═══════════════════════════════════════════════════
+// MODULE 8: EXPORT ICS
+// ═══════════════════════════════════════════════════
+function exportICS(){
+  let lines=[
+    'BEGIN:VCALENDAR','VERSION:2.0',
+    'PRODID:-//Lich Viet PWA//VI','CALSCALE:GREGORIAN',
+    'X-WR-CALNAME:Âm Lịch Việt Nam','X-WR-TIMEZONE:Asia/Ho_Chi_Minh',
+  ];
+
+  // User events
+  Object.entries(events).forEach(([key,evArr])=>{
+    const[y,m,d]=key.split('-').map(Number);
+    const lunar=solar2lunar(d,m,y);
+    const thang=`Tháng ${THANG[lunar.lm]}${lunar.leap?' Nhuận':''}`;
+    evArr.forEach(ev=>{
+      const dt=`${y}${String(m).padStart(2,'0')}${String(d).padStart(2,'0')}`;
+      const dtNext=new Date(y,m-1,d+1);
+      const dn=`${dtNext.getFullYear()}${String(dtNext.getMonth()+1).padStart(2,'0')}${String(dtNext.getDate()).padStart(2,'0')}`;
+      lines.push('BEGIN:VEVENT',
+        `UID:lv-${ev.id}@lichviet`,
+        `DTSTART;VALUE=DATE:${dt}`,
+        `DTEND;VALUE=DATE:${dn}`,
+        `SUMMARY:${ev.name.replace(/,/g,'\\,')}`,
+        `DESCRIPTION:🗓️ Âm lịch: ${lunar.ld}/${lunar.lm} (${thang})${ev.note?'\\n'+ev.note:''}`,
+        'TRANSP:TRANSPARENT','END:VEVENT');
+    });
+  });
+
+  // Public holidays (current year ± 1)
+  [curY-1,curY,curY+1].forEach(y=>{
+    for(let m=1;m<=12;m++){
+      const dim=new Date(y,m,0).getDate();
+      for(let d=1;d<=dim;d++){
+        const hols=getLe(d,m,y);
+        hols.forEach(h=>{
+          const dt=`${y}${String(m).padStart(2,'0')}${String(d).padStart(2,'0')}`;
+          const dtNext=new Date(y,m-1,d+1);
+          const dn=`${dtNext.getFullYear()}${String(dtNext.getMonth()+1).padStart(2,'0')}${String(dtNext.getDate()).padStart(2,'0')}`;
+          lines.push('BEGIN:VEVENT',
+            `UID:lv-hol-${y}${m}${d}${h.src}@lichviet`,
+            `DTSTART;VALUE=DATE:${dt}`,
+            `DTEND;VALUE=DATE:${dn}`,
+            `SUMMARY:${h.name.replace(/,/g,'\\,')}`,
+            'TRANSP:TRANSPARENT','END:VEVENT');
+        });
+      }
+    }
+  });
+
+  lines.push('END:VCALENDAR');
+  const blob=new Blob([lines.join('\r\n')],{type:'text/calendar'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=`lich-viet-${curY}.ics`;
+  a.click();
+  toast('Đã xuất file .ics ✓');
+}
+
+// ═══════════════════════════════════════════════════
+// MODULE 8b: IMPORT ICS (từ Google Calendar)
+// Hỗ trợ: UTC datetime, all-day, TZID, recurring,
+//         line folding (RFC 5545), UTF-8 Vietnamese
+// ═══════════════════════════════════════════════════
+
+let importParsed = [];   // events chờ confirm
+
+function openImport() {
+  importParsed = [];
+  document.getElementById('importStep1').style.display = '';
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('importStep3').style.display = 'none';
+  document.getElementById('icsFileInput').value = '';
+  openSheet('importSheet');
+}
+function cancelImport() {
+  importParsed = [];
+  document.getElementById('importStep1').style.display = '';
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('icsFileInput').value = '';
+}
+
+// ── File input handlers ──
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) readICSFile(file);
+}
+function handleFileDrop(e) {
+  e.preventDefault();
+  document.getElementById('importDropZone').style.borderColor = 'var(--border)';
+  const file = e.dataTransfer.files[0];
+  if (file && (file.name.endsWith('.ics') || file.name.endsWith('.ical'))) readICSFile(file);
+  else toast('Vui lòng chọn file .ics');
+}
+
+function readICSFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = parseICS(e.target.result);
+      if (!parsed.length) { toast('Không tìm thấy sự kiện nào trong file'); return; }
+      importParsed = parsed;
+      showImportPreview(parsed, file.name);
+    } catch(err) {
+      toast('Lỗi đọc file: ' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+// ── ICS Parser ──
+function parseICS(text) {
+  // RFC 5545: unfold lines (tiếp nối bắt đầu bằng space/tab)
+  text = text.replace(/\r\n[ \t]/g, '').replace(/\r/g, '');
+  const blocks = text.split('BEGIN:VEVENT');
+  const events = [];
+
+  for (let i = 1; i < blocks.length; i++) {
+    const block = blocks[i].split('END:VEVENT')[0];
+    const props = {};
+
+    for (const line of block.split('\n')) {
+      if (!line.includes(':')) continue;
+      const colonIdx = line.indexOf(':');
+      const keyPart  = line.substring(0, colonIdx);
+      const val      = line.substring(colonIdx + 1).trim();
+      const keyBase  = keyPart.split(';')[0].toUpperCase();
+
+      // Parse params: TZID=Asia/Ho_Chi_Minh, VALUE=DATE
+      const params = {};
+      keyPart.split(';').slice(1).forEach(p => {
+        const [k, v] = p.split('=');
+        if (k && v) params[k.toUpperCase()] = v;
+      });
+
+      // Unescape ICS text: \n → newline, \, → comma, \; → semicolon
+      const unescaped = val.replace(/\\n/gi,'\n').replace(/\\,/g,',').replace(/\\;/g,';').replace(/\\\\/g,'\\');
+      props[keyBase] = { val: unescaped, params };
+    }
+
+    const ev = parseICSEvent(props);
+    if (ev) events.push(ev);
+  }
+
+  return events;
+}
+
+function parseICSDatetime(val, params) {
+  if (!val) return null;
+
+  // All-day: VALUE=DATE or plain YYYYMMDD (8 digits)
+  if (params.VALUE === 'DATE' || /^\d{8}$/.test(val)) {
+    return {
+      allday: true,
+      y: +val.slice(0,4), m: +val.slice(4,6), d: +val.slice(6,8)
+    };
+  }
+
+  // Datetime: YYYYMMDDTHHmmss[Z]
+  const clean = val.replace('Z','');
+  let y=+clean.slice(0,4), mo=+clean.slice(4,6), d=+clean.slice(6,8);
+  let h=+clean.slice(9,11), mi=+clean.slice(11,13);
+
+  // Convert UTC (Z) → UTC+7
+  if (val.endsWith('Z')) {
+    h += 7;
+    if (h >= 24) { h -= 24; d += 1; }
+    // Simple day overflow (không handle tháng đầy đủ nhưng đủ cho 99% cases)
+    const daysInMonth = [0,31,28,31,30,31,30,31,31,30,31,30,31];
+    if (mo===2 && ((y%4===0&&y%100!==0)||y%400===0)) daysInMonth[2]=29;
+    if (d > daysInMonth[mo]) { d = 1; mo++; if (mo > 12) { mo = 1; y++; } }
+  }
+  // TZID: giả định VN time nếu là Asia/Ho_Chi_Minh, không convert nếu là tz khác
+  // (đơn giản hóa: giữ nguyên giờ trong file)
+
+  return { allday: false, y, m: mo, d, h, mi };
+}
+
+function parseICSEvent(props) {
+  const dtStart = props['DTSTART'];
+  if (!dtStart) return null;
+
+  const dt = parseICSDatetime(dtStart.val, dtStart.params);
+  if (!dt) return null;
+
+  const summary  = props['SUMMARY']?.val     || '(Không có tiêu đề)';
+  const desc     = props['DESCRIPTION']?.val || '';
+  const location = props['LOCATION']?.val    || '';
+  const uid      = props['UID']?.val         || String(Date.now() + Math.random());
+  const rrule    = props['RRULE']?.val        || '';
+
+  // Build time string
+  const timeStr = dt.allday ? '' : `${String(dt.h).padStart(2,'0')}:${String(dt.mi).padStart(2,'0')}`;
+
+  // Expand recurring events (weekly/monthly/yearly, giới hạn 52 occurrences)
+  if (rrule) {
+    return expandRecurring(dt, summary, desc, location, uid, timeStr, rrule);
+  }
+
+  return [{
+    uid, summary, desc, location, timeStr,
+    y: dt.y, m: dt.m, d: dt.d, allday: dt.allday, recurring: false
+  }];
+}
+
+function expandRecurring(dt, summary, desc, location, uid, timeStr, rrule) {
+  const results = [];
+  const params = {};
+  rrule.split(';').forEach(p => {
+    const [k,v] = p.split('=');
+    if (k) params[k] = v;
+  });
+
+  const freq   = params['FREQ']  || '';
+  const count  = Math.min(+params['COUNT'] || 52, 52);  // max 52
+  const until  = params['UNTIL'] || '';
+
+  let { y, m, d } = dt;
+
+  for (let i = 0; i < count; i++) {
+    results.push({ uid: uid+'_'+i, summary, desc, location, timeStr,
+                   y, m, d, allday: dt.allday, recurring: true,
+                   recurLabel: freq === 'WEEKLY' ? '🔁 hàng tuần'
+                             : freq === 'MONTHLY'? '🔁 hàng tháng'
+                             : freq === 'YEARLY' ? '🔁 hàng năm' : '🔁' });
+
+    // Advance date
+    if (freq === 'WEEKLY')       d += 7;
+    else if (freq === 'MONTHLY') m += 1;
+    else if (freq === 'YEARLY')  y += 1;
+    else break;  // DAILY etc — không expand
+
+    // Normalize date
+    while (true) {
+      const dim = new Date(y, m, 0).getDate();
+      if (d > dim) { d -= dim; m++; }
+      if (m > 12) { m = 1; y++; }
+      else break;
+    }
+
+    // Check UNTIL
+    if (until) {
+      const uy=+until.slice(0,4),um=+until.slice(4,6),ud=+until.slice(6,8);
+      if (y > uy || (y===uy && m > um) || (y===uy && m===um && d > ud)) break;
+    }
+  }
+  return results;
+}
+
+// ── Preview UI ──
+function showImportPreview(parsed, filename) {
+  // Flatten array of arrays
+  const flat = parsed.flat();
+
+  // Group by date for display
+  const byDate = {};
+  flat.forEach(ev => {
+    const k = `${ev.y}-${String(ev.m).padStart(2,'0')}-${String(ev.d).padStart(2,'0')}`;
+    if (!byDate[k]) byDate[k] = [];
+    byDate[k].push(ev);
+  });
+
+  const total = flat.length;
+  const recurring = flat.filter(e => e.recurring).length;
+  const allday    = flat.filter(e => e.allday).length;
+  const dupCount  = flat.filter(e => isDuplicate(e)).length;
+  const newCount  = total - dupCount;
+
+  document.getElementById('importSummary').innerHTML = `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px">
+      <div style="font-size:.8rem;color:var(--gold-light);font-weight:700;margin-bottom:8px">📄 ${filename}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:.75rem;color:var(--text-dim)">
+        <div>Tổng sự kiện: <strong style="color:var(--text)">${total}</strong></div>
+        <div>Sự kiện mới: <strong style="color:var(--green)">${newCount}</strong></div>
+        <div>Lặp lại: <strong style="color:var(--text)">${recurring}</strong></div>
+        <div>Trùng (bỏ qua): <strong style="color:var(--text-muted)">${dupCount}</strong></div>
+      </div>
+    </div>`;
+
+  // Preview list (max 50 events)
+  const preview = Object.entries(byDate).sort().slice(0, 50);
+  let html = '';
+  preview.forEach(([dateKey, evs]) => {
+    const [y,mo,d] = dateKey.split('-').map(Number);
+    const lunar = solar2lunar(d, mo, y);
+    const lunarStr = `${lunar.ld}/${lunar.lm}${lunar.leap?' nhuận':''}`;
+    const dow = ['CN','T2','T3','T4','T5','T6','T7'][new Date(y,mo-1,d).getDay()];
+    html += `<div style="margin-bottom:10px">
+      <div style="font-size:.72rem;color:var(--text-muted);margin-bottom:4px;font-weight:600">
+        ${dow} ${d}/${mo}/${y} <span style="color:var(--gold-dim)">(${lunarStr} âm)</span>
+      </div>`;
+    evs.forEach(ev => {
+      const dup = isDuplicate(ev);
+      html += `<div style="background:${dup?'var(--bg)':'var(--surface2)'};border:1px solid var(--border);
+        border-left:3px solid ${dup?'var(--border)':'var(--primary-light)'};
+        border-radius:7px;padding:8px 10px;margin-bottom:4px;opacity:${dup?'0.5':'1'}">
+        <div style="font-size:.82rem;font-weight:600;color:${dup?'var(--text-muted)':'var(--text)'}">
+          ${ev.timeStr ? `<span style="color:var(--blue);margin-right:6px">⏰${ev.timeStr}</span>` : ''}${ev.summary}
+          ${ev.recurLabel ? `<span style="font-size:.65rem;color:var(--text-muted);margin-left:4px">${ev.recurLabel}</span>` : ''}
+          ${dup ? '<span style="font-size:.65rem;color:var(--text-muted);margin-left:4px">đã có</span>' : ''}
+        </div>
+        ${ev.location ? `<div style="font-size:.68rem;color:var(--text-muted);margin-top:2px">📍 ${ev.location}</div>` : ''}
+      </div>`;
+    });
+    html += '</div>';
+  });
+  if (Object.keys(byDate).length > 50) html += `<div style="font-size:.72rem;color:var(--text-muted);text-align:center;padding:8px">... và ${flat.length - 50} sự kiện khác</div>`;
+
+  document.getElementById('importPreview').innerHTML = html;
+  document.getElementById('importConfirmBtn').textContent = `Nhập ${newCount} sự kiện mới`;
+  document.getElementById('importConfirmBtn').disabled = newCount === 0;
+
+  document.getElementById('importStep1').style.display = 'none';
+  document.getElementById('importStep2').style.display = '';
+}
+
+function isDuplicate(ev) {
+  // Check by UID (tránh import trùng)
+  const k = dayKey(ev.d, ev.m, ev.y);
+  const existing = events[k] || [];
+  return existing.some(e => e.uid === ev.uid || (e.name === ev.summary && e.gcal));
+}
+
+// ── Confirm import ──
+function confirmImport() {
+  const flat = importParsed.flat();
+  let imported = 0, skipped = 0;
+
+  flat.forEach(ev => {
+    if (isDuplicate(ev)) { skipped++; return; }
+    addEvent(ev.d, ev.m, ev.y, {
+      name:     ev.summary,
+      time:     ev.timeStr,
+      note:     [ev.desc, ev.location ? '📍 ' + ev.location : ''].filter(Boolean).join(' | '),
+      uid:      ev.uid,
+      gcal:     true,   // đánh dấu nguồn gốc Google Calendar
+      recurring: ev.recurring || false
+    });
+    imported++;
+  });
+
+  render();
+  document.getElementById('importStep2').style.display = 'none';
+  document.getElementById('importStep3').style.display = '';
+  document.getElementById('importDoneText').textContent = `Đã nhập ${imported} sự kiện!`;
+  document.getElementById('importDoneSub').textContent  =
+    `${skipped > 0 ? `Bỏ qua ${skipped} sự kiện trùng. ` : ''}Hiển thị trong lịch ngay bây giờ.`;
+}
+
+
+let toastTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
+}
+
+document.getElementById('btnPrev').onclick=()=>{curM--;if(curM<1){curM=12;curY--}render()};
+document.getElementById('btnNext').onclick=()=>{curM++;if(curM>12){curM=1;curY++}render()};
+
+// Swipe navigation
+let swipeX=0;
+document.querySelector('.scroll-area').addEventListener('touchstart',e=>{swipeX=e.touches[0].clientX},{passive:true});
+document.querySelector('.scroll-area').addEventListener('touchend',e=>{
+  const dx=e.changedTouches[0].clientX-swipeX;
+  if(Math.abs(dx)>60){
+    if(dx<0){curM++;if(curM>12){curM=1;curY++}}
+    else{curM--;if(curM<1){curM=12;curY--}}
+    render();
+  }
+},{passive:true});
+
+// Keyboard
+document.addEventListener('keydown',e=>{
+  if(e.key==='ArrowLeft'){curM--;if(curM<1){curM=12;curY--}render()}
+  if(e.key==='ArrowRight'){curM++;if(curM>12){curM=1;curY++}render()}
+  if(e.key==='Escape')closeAllSheets();
+});
+
+// ═══════════════════════════════════════════════════
+// MODULE 10: SERVICE WORKER (PWA offline)
+// ═══════════════════════════════════════════════════
+if('serviceWorker' in navigator){
+  const swCode=`
+const CACHE='lichviet-v1';
+self.addEventListener('install',e=>e.waitUntil(
+  caches.open(CACHE).then(c=>c.addAll(['./']))
+));
+self.addEventListener('fetch',e=>e.respondWith(
+  caches.match(e.request).then(r=>r||fetch(e.request))
+));`;
+  const swBlob=new Blob([swCode],{type:'application/javascript'});
+  const swUrl=URL.createObjectURL(swBlob);
+  navigator.serviceWorker.register(swUrl).catch(()=>{});
+}
+
+// ── INIT ──
+render();
+</script>
+</body>
+</html>
