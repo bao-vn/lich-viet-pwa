@@ -84,17 +84,21 @@ document.write(`<link rel="manifest" href="${manifestUrl}">`);
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bot: env(safe-area-inset-bottom, 0px);
 
+  /* Dynamic today-bar height — updated per breakpoint below */
+  --today-bar-h: 76px;
+
   --font-display: 'Playfair Display', Georgia, serif;
   --font-body:    'Quicksand', sans-serif;
 }
 
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-html{height:100%;overflow:hidden}
+html{height:100%;overflow:hidden;width:100%}
 body{
   font-family:var(--font-body);
   background:var(--bg);
   color:var(--text);
   height:100%;
+  width:100%;
   display:flex;
   flex-direction:column;
   overflow:hidden;
@@ -102,37 +106,42 @@ body{
 }
 
 /* ── HEADER ── */
+/* ── HEADER (mobile-first: Compact default) ── */
 .header{
   background:linear-gradient(135deg, #1565c0 0%, #1e88e5 100%);
-  padding:calc(var(--safe-top) + 10px) 12px 10px;
+  padding:calc(var(--safe-top) + 10px) 10px 10px;
   border-bottom:none;
   box-shadow:var(--shadow-md);
   display:flex;
   align-items:center;
-  gap:8px;
+  gap:6px;
   flex-shrink:0;
   position:relative;
+  flex-wrap:wrap;
+  row-gap:8px;
 }
 .header-logo{
   font-family:var(--font-display);
-  font-size:1.05rem;
+  font-size:1rem;
   color:#ffffff;
   font-weight:700;
   white-space:nowrap;
   letter-spacing:.02em;
+  flex-shrink:0;
 }
 .header-nav{
   display:flex;
   align-items:center;
   gap:4px;
-  flex:1;
+  flex:1 1 auto;
   justify-content:center;
+  min-width:0;
 }
 .nav-btn{
   background:rgba(255,255,255,.18);
   border:1px solid rgba(255,255,255,.3);
   color:#ffffff;
-  width:32px;height:32px;
+  width:30px;height:30px;
   border-radius:50%;
   cursor:pointer;
   font-size:1rem;
@@ -143,29 +152,79 @@ body{
 .nav-btn:active{background:rgba(255,255,255,.32);transform:scale(.92)}
 .month-year-display{
   font-family:var(--font-display);
-  font-size:.95rem;
+  font-size:.82rem;
   color:#ffffff;
   font-weight:700;
   cursor:pointer;
-  padding:4px 10px;
+  padding:3px 6px;
   border-radius:8px;
   border:1px solid rgba(255,255,255,.35);
   background:rgba(255,255,255,.15);
   white-space:nowrap;
-  min-width:130px;
+  min-width:0;
   text-align:center;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  flex:0 1 auto;
 }
-.header-actions{display:flex;gap:6px}
+/* Compact: 2-row header. Row 1 = [logo | icons], Row 2 = [nav | view-toggle] */
+.header-icons{
+  display:flex;gap:4px;align-items:center;
+  flex-shrink:0;
+  order:2;
+  margin-left:auto;
+}
+/* Line-break forcer — deterministic wrap between row 1 and row 2 */
+.header::before{
+  content:"";
+  order:3;
+  flex-basis:100%;
+  height:0;
+}
+.header-logo{order:1}
+.header-nav{order:4;flex:1 1 auto;justify-content:flex-start}
+.view-toggle{order:5;margin-left:auto}
 .icon-btn{
   background:none;border:none;
   color:rgba(255,255,255,.85);
-  font-size:1.2rem;cursor:pointer;
-  width:34px;height:34px;
+  font-size:1.1rem;cursor:pointer;
+  width:32px;height:32px;
   border-radius:8px;
   display:flex;align-items:center;justify-content:center;
   transition:all .15s;
 }
 .icon-btn:active{background:rgba(255,255,255,.2);color:#ffca28}
+
+/* ── VIEW MODE TOGGLE ── */
+.view-toggle{
+  display:inline-flex;
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:10px;
+  padding:2px;
+  gap:2px;
+  flex-shrink:0;
+}
+.view-toggle .vt-btn{
+  background:transparent;border:none;
+  color:rgba(255,255,255,.72);
+  font-family:var(--font-body);
+  font-size:.64rem;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  padding:5px 7px;
+  border-radius:7px;
+  cursor:pointer;
+  transition:all .18s ease;
+  white-space:nowrap;
+}
+.view-toggle .vt-btn.active{
+  background:#ffffff;
+  color:var(--primary);
+  box-shadow:0 1px 3px rgba(0,0,0,.12);
+}
+.view-toggle .vt-btn:not(.active):active{color:#fff;background:rgba(255,255,255,.1)}
 
 /* ── LUNAR STRIP ── */
 .lunar-strip{
@@ -239,7 +298,12 @@ body{
   border-radius:2px;pointer-events:none;
   box-shadow:inset 0 0 0 1px rgba(249,168,37,.2);
 }
-.day.has-event{background:var(--surface2)}
+.day.has-event{
+  background:var(--surface2);
+  box-shadow:inset 3px 0 0 0 var(--primary-light);
+}
+.day.sun.has-event{box-shadow:inset 3px 0 0 0 var(--accent)}
+.day.sat.has-event{box-shadow:inset 3px 0 0 0 var(--primary)}
 .day-top{display:flex;align-items:flex-start;justify-content:space-between}
 .solar{
   font-family:var(--font-display);
@@ -273,34 +337,482 @@ body{
   display:-webkit-box;
   -webkit-line-clamp:1;
   -webkit-box-orient:vertical;
+  line-clamp:1;
+}
+/* Event chip — compact pill showing event in month grid */
+.event-chip{
+  display:flex;align-items:center;gap:3px;
+  background:var(--primary-pale);
+  border-left:2px solid var(--primary);
+  border-radius:3px;
+  padding:1px 4px;
+  font-size:.58rem;
+  line-height:1.25;
+  color:var(--text-body);
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  margin-top:1px;
+}
+.event-chip-time{
+  font-weight:700;
+  color:var(--primary);
+  font-family:'SF Mono', ui-monospace, Menlo, monospace;
+  font-size:.55rem;
+  flex-shrink:0;
+}
+.event-chip-name{
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1;
+}
+.event-chip-repeat{font-size:.56rem;opacity:.7;flex-shrink:0}
+.event-chip.more{
+  background:transparent;
+  border-left:none;
+  color:var(--text-muted);
+  font-style:italic;
+  font-size:.55rem;
+  padding:0 4px;
 }
 
-/* ── TODAY STRIP (below calendar, current day summary) ── */
-.today-bar{
-  background:var(--surface);
-  border-top:2px solid var(--border);
-  box-shadow:0 -2px 12px rgba(21,101,192,.08);
-  padding:8px 14px calc(var(--safe-bot) + 8px);
-  flex-shrink:0;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
+/* ── WEEK VIEW — "Trang Blốc Lịch" editorial style ── */
+.week-list{
+  display:none;
+  flex-direction:column;
+  padding:8px 10px calc(var(--safe-bot) + var(--today-bar-h) + 4px) 10px;
   gap:8px;
 }
-.today-info{flex:1;min-width:0}
-.today-date{font-size:.95rem;font-weight:700;color:var(--primary)}
-.today-lunar{font-size:.72rem;color:var(--text-dim);margin-top:1px}
-.add-event-btn{
-  background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);
-  border:none;color:#ffffff;
-  box-shadow:var(--shadow-sm);
-  padding:8px 16px;border-radius:20px;
-  font-size:.82rem;font-weight:700;
-  font-family:var(--font-body);
-  cursor:pointer;white-space:nowrap;
-  transition:all .15s;flex-shrink:0;
+.week-list.active{display:flex}
+.cal-grid.hidden{display:none}
+.weekdays.hidden{display:none}
+
+.week-row{
+  position:relative;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:12px 14px 12px 18px;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  cursor:pointer;
+  transition:transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  opacity:0;
+  transform:translateY(6px);
+  animation:weekRowIn .32s ease forwards;
+  overflow:hidden;
 }
-.add-event-btn:active{opacity:.8;transform:scale(.95)}
+.week-row:active{transform:scale(.995)}
+.week-row:hover{border-color:var(--primary-dim)}
+/* Left strip — vertical color bar */
+.week-row::before{
+  content:"";
+  position:absolute;left:0;top:0;bottom:0;
+  width:4px;
+  background:var(--primary);
+}
+.week-row.sun::before{background:var(--accent)}
+.week-row.sat::before{background:var(--primary-light)}
+.week-row.today{
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(249,168,37,.10) 0%, transparent 55%),
+    linear-gradient(180deg, #fffdf5 0%, var(--surface) 100%);
+  border-color:var(--gold);
+  box-shadow:0 4px 20px -6px rgba(249,168,37,.35);
+}
+.week-row.today::before{background:linear-gradient(180deg, var(--gold) 0%, var(--gold-dim) 100%);width:5px}
+.week-row.other-month{opacity:.72}
+
+@keyframes weekRowIn{
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* HEADER ROW: daynum + weekday + monthyear inline — mobile-first Compact */
+.wr-left{
+  display:flex;
+  align-items:baseline;
+  gap:10px;
+  min-width:0;
+  flex-wrap:wrap;
+}
+.wr-daynum{
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:1.9rem;
+  line-height:1;
+  letter-spacing:-.02em;
+  color:var(--primary);
+  font-feature-settings:"lnum" 1;
+  flex-shrink:0;
+}
+.week-row.sun .wr-daynum{color:var(--accent)}
+.week-row.sat .wr-daynum{color:var(--primary-light)}
+.week-row.today .wr-daynum{color:var(--gold-dim)}
+.wr-dow{
+  font-family:var(--font-body);
+  font-size:.66rem;
+  font-weight:700;
+  letter-spacing:.1em;
+  text-transform:uppercase;
+  color:var(--primary);
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.week-row.sun .wr-dow{color:var(--accent)}
+.week-row.today .wr-dow{color:var(--gold-dim)}
+.wr-monthyear{
+  font-size:.62rem;
+  font-weight:500;
+  letter-spacing:.06em;
+  color:var(--text-muted);
+  white-space:nowrap;
+  flex-shrink:0;
+}
+
+/* CHIPS ROW: wraps naturally */
+.wr-chips{
+  display:flex;align-items:center;flex-wrap:wrap;
+  gap:6px;
+  min-width:0;
+}
+/* Legacy .wr-meta — kept for backward compat if any child still uses it */
+.wr-meta{
+  display:flex;align-items:center;flex-wrap:wrap;
+  gap:6px 8px;
+  min-width:0;
+}
+.wr-lunar{
+  font-family:var(--font-body);
+  font-size:.82rem;
+  font-weight:600;
+  color:var(--text-body);
+  display:block;
+  line-height:1.4;
+  min-width:0;
+}
+.wr-lunar::before{
+  content:"";
+  display:inline-block;
+  vertical-align:middle;
+  margin-right:6px;
+  margin-bottom:1px;
+  width:5px;height:5px;border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 0 2px rgba(229,57,53,.14);
+}
+.wr-lunar>strong{color:var(--primary);font-weight:700;white-space:nowrap}
+.week-row.today .wr-lunar strong{color:var(--gold-dim)}
+
+/* CHIPS: hoàng đạo + can chi năm */
+.wr-chip{
+  font-family:var(--font-body);
+  font-size:.58rem;
+  font-weight:700;
+  letter-spacing:.04em;
+  padding:2px 6px;
+  border-radius:5px;
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.wr-chip.hd{background:var(--green-pale);color:var(--green);border:1px solid rgba(46,125,50,.25)}
+.wr-chip.hac{background:#fdecea;color:var(--accent);border:1px solid rgba(229,57,53,.22)}
+.wr-chip.cc{background:var(--primary-pale);color:var(--primary);border:1px solid var(--primary-dim)}
+
+/* HOLIDAY LINE */
+.wr-holiday{
+  font-size:.72rem;
+  font-weight:700;
+  color:var(--accent);
+  letter-spacing:.02em;
+  display:flex;align-items:center;gap:6px;
+  line-height:1.35;
+}
+.wr-holiday::before{
+  content:"★";
+  color:var(--gold);
+  font-size:.85rem;
+  line-height:1;
+}
+
+/* EVENT LIST */
+.wr-events{
+  display:flex;flex-direction:column;
+  gap:3px;
+  margin-top:2px;
+}
+.wr-ev{
+  display:flex;align-items:baseline;gap:8px;
+  font-size:.72rem;
+  color:var(--text-body);
+  line-height:1.35;
+  min-width:0;
+}
+.wr-ev-time{
+  font-family:'SF Mono', ui-monospace, Menlo, Consolas, monospace;
+  font-size:.64rem;
+  font-weight:600;
+  color:var(--primary);
+  min-width:38px;
+  flex-shrink:0;
+}
+.wr-ev-allday{
+  font-family:var(--font-body);
+  font-size:.6rem;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  min-width:38px;
+  flex-shrink:0;
+}
+.wr-ev-name{
+  flex:1;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.wr-ev-repeat{
+  font-size:.68rem;
+  margin-left:6px;
+  opacity:.7;
+  filter:saturate(.85);
+}
+.event-repeat-badge{
+  display:inline-block;
+  font-size:.62rem;
+  font-weight:600;
+  color:var(--primary);
+  background:var(--primary-pale);
+  border:1px solid var(--primary-dim);
+  padding:1px 6px;
+  border-radius:10px;
+  margin-left:8px;
+  letter-spacing:.02em;
+  vertical-align:middle;
+}
+.form-label{
+  display:block;
+  font-family:var(--font-body);
+  font-size:.7rem;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--text-dim);
+  margin:12px 0 6px;
+}
+.form-hint{
+  font-size:.7rem;
+  color:var(--text-muted);
+  margin-top:-2px;
+  margin-bottom:10px;
+  line-height:1.45;
+  padding:6px 10px;
+  background:var(--surface2);
+  border-radius:8px;
+  border-left:3px solid var(--primary-dim);
+}
+
+/* Checkbox-row for multi-select notif settings */
+.checkbox-row{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:8px 0;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.checkbox-row:active{opacity:.6}
+.cb{
+  width:20px;height:20px;
+  border:1.5px solid var(--border);
+  border-radius:6px;
+  background:var(--surface);
+  flex-shrink:0;
+  margin-top:2px;
+  position:relative;
+  transition:all .15s ease;
+}
+.cb.on{
+  background:var(--primary);
+  border-color:var(--primary);
+}
+.cb.on::after{
+  content:"✓";
+  position:absolute;
+  inset:0;
+  display:flex;align-items:center;justify-content:center;
+  color:#fff;
+  font-size:.85rem;
+  font-weight:700;
+  line-height:1;
+}
+.wr-ev-more{
+  font-size:.68rem;
+  color:var(--text-muted);
+  font-style:italic;
+  letter-spacing:.02em;
+  padding-left:50px;
+}
+
+/* EMPTY state on a day */
+.wr-empty{
+  font-size:.68rem;
+  color:var(--text-muted);
+  font-style:italic;
+  letter-spacing:.04em;
+}
+
+/* WEEK RANGE HEADER inside week-list */
+.week-range-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 4px 2px;
+  font-family:var(--font-body);
+  font-size:.64rem;
+  font-weight:700;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--text-dim);
+}
+.week-range-bar span{color:var(--primary)}
+
+/* ── TODAY BAR — Editorial Vietnamese Almanac ── */
+/* ── TODAY BAR (mobile-first Compact default) ── */
+.today-bar{
+  position:relative;
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(249,168,37,.06) 0%, transparent 55%),
+    linear-gradient(180deg, #fffdf7 0%, var(--surface) 100%);
+  border-top:1px solid var(--border);
+  box-shadow:0 -8px 24px -12px rgba(21,101,192,.18);
+  padding:8px 12px calc(var(--safe-bot) + 8px) 12px;
+  flex-shrink:0;
+  display:flex;
+  align-items:stretch;
+  justify-content:space-between;
+  gap:10px;
+  overflow:hidden;
+}
+/* Thin gold hairline — evokes almanac page edge */
+.today-bar::before{
+  content:"";
+  position:absolute;left:0;right:0;top:0;height:1px;
+  background:linear-gradient(90deg,
+    transparent 0%,
+    rgba(249,168,37,.55) 20%,
+    rgba(229,57,53,.55) 50%,
+    rgba(249,168,37,.55) 80%,
+    transparent 100%);
+}
+.today-info{
+  flex:1;min-width:0;
+  display:grid;
+  grid-template-columns:auto 1fr;
+  grid-template-rows:auto auto;
+  column-gap:12px;
+  align-items:center;
+}
+/* Big serif day number — the hero */
+.today-daynum{
+  grid-row:1 / span 2;
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:2.2rem;
+  line-height:.92;
+  letter-spacing:-.02em;
+  color:var(--primary);
+  font-feature-settings:"lnum" 1;
+  position:relative;
+  padding-right:10px;
+  animation:todayFade .32s ease both;
+}
+/* Vertical hairline separator — vermilion thread */
+.today-daynum::after{
+  content:"";
+  position:absolute;top:8%;bottom:8%;right:0;
+  width:1px;
+  background:linear-gradient(180deg,
+    transparent 0%,
+    rgba(229,57,53,.28) 20%,
+    rgba(249,168,37,.45) 50%,
+    rgba(229,57,53,.28) 80%,
+    transparent 100%);
+}
+.today-meta{
+  grid-column:2;grid-row:1;
+  font-family:var(--font-body);
+  font-size:.66rem;
+  font-weight:600;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--text-dim);
+  display:flex;align-items:baseline;gap:6px;
+  min-width:0;
+}
+.today-dow{color:var(--primary);font-weight:700}
+.today-monthyear{color:var(--text-muted);font-weight:500}
+.today-lunar{
+  grid-column:2;grid-row:2;
+  font-family:var(--font-body);
+  font-size:.76rem;
+  font-weight:500;
+  color:var(--text-body);
+  margin-top:2px;
+  display:flex;align-items:center;gap:7px;
+  min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+/* Vermilion seal dot — almanac callback */
+.today-lunar::before{
+  content:"";
+  flex-shrink:0;
+  width:6px;height:6px;
+  border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 0 2px rgba(229,57,53,.14);
+}
+.today-lunar strong{
+  color:var(--primary);
+  font-weight:700;
+}
+@keyframes todayFade{
+  from{opacity:0;transform:translateY(4px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+/* Add-event button — confident, flat, with gold hairline */
+/* Compact default: icon-only circular FAB */
+.add-event-btn{
+  position:relative;
+  background:var(--primary);
+  border:none;color:#ffffff;
+  box-shadow:
+    0 1px 0 0 rgba(255,255,255,.18) inset,
+    0 4px 12px -4px rgba(21,101,192,.45);
+  padding:0;
+  width:44px;min-width:44px;
+  min-height:44px;
+  border-radius:50%;
+  font-size:.74rem;font-weight:700;
+  font-family:var(--font-body);
+  letter-spacing:.03em;
+  cursor:pointer;white-space:nowrap;
+  flex-shrink:0;align-self:center;
+  transition:transform .18s ease, box-shadow .18s ease;
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:0;
+}
+.add-event-btn .add-event-label{display:none}
+.add-event-btn::before{
+  content:"+";
+  font-family:var(--font-display);
+  font-weight:700;
+  font-size:1.6rem;
+  line-height:1;
+  color:var(--gold-light);
+  transition:transform .18s ease;
+}
+.add-event-btn:hover{
+  box-shadow:
+    0 1px 0 0 rgba(255,255,255,.22) inset,
+    0 6px 18px -4px rgba(21,101,192,.55);
+}
+.add-event-btn:hover::before{transform:rotate(90deg)}
+.add-event-btn:active{transform:scale(.97)}
 
 /* ── SHEETS (bottom drawer) ── */
 .sheet-overlay{
@@ -363,38 +875,6 @@ body{
   color:var(--primary);
   line-height:1;
 }
-
-/* ── GCAL SPINNER ── */
-.gcal-spinner{
-  width:36px;height:36px;border-radius:50%;
-  border:3px solid var(--border);
-  border-top-color:var(--primary);
-  animation:spin .7s linear infinite;
-  margin:0 auto;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
-
-/* ── GCAL CALENDAR ITEM ── */
-.cal-item{
-  display:flex;align-items:center;gap:10px;
-  padding:10px 12px;
-  background:var(--surface2);
-  border:1.5px solid var(--border);
-  border-radius:10px;
-  margin-bottom:7px;
-  cursor:pointer;
-  transition:all .15s;
-}
-.cal-item.selected{
-  border-color:var(--primary-light);
-  background:var(--primary-pale);
-}
-.cal-item:active{opacity:.75}
-.cal-color{width:12px;height:12px;border-radius:50%;flex-shrink:0}
-.cal-info{flex:1;min-width:0}
-.cal-name{font-size:.85rem;font-weight:600;color:var(--text-body);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cal-access{font-size:.68rem;color:var(--text-muted);margin-top:1px}
-.cal-check{font-size:1rem;color:var(--primary);flex-shrink:0}
 
 .detail-dow{font-size:.8rem;color:var(--text-dim);margin-top:2px}
 
@@ -661,6 +1141,121 @@ body{
   white-space:nowrap;
 }
 .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ═══════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS — Material Design 3 compliance
+   Compact  (default < 600px): phone portrait
+   Medium   (≥ 600px):         tablet portrait, phone landscape, small tablet
+   Expanded (≥ 905px):         tablet landscape, laptop, desktop
+   ═══════════════════════════════════════════════════ */
+
+/* ── MEDIUM (≥ 600px) ── */
+@media (min-width: 600px){
+  /* Header: single-row, no wrap, generous spacing */
+  .header{padding:calc(var(--safe-top) + 12px) 16px 12px;gap:10px;flex-wrap:nowrap;row-gap:0}
+  /* Reset order + auto-margins → restore natural single-row flow */
+  .header::before{display:none}
+  .header-logo,.header-nav,.view-toggle,.header-icons{order:0}
+  .header-nav{justify-content:center}
+  .view-toggle{margin-left:0}
+  .header-icons{margin-left:0;gap:6px}
+  .header-logo{font-size:1.1rem}
+  .month-year-display{font-size:.95rem;padding:5px 12px;min-width:160px}
+  .nav-btn{width:34px;height:34px}
+  .icon-btn{width:36px;height:36px;font-size:1.25rem}
+  .view-toggle .vt-btn{padding:6px 11px;font-size:.72rem}
+
+  /* Today-bar: button back to pill with text, daynum larger */
+  .today-bar{padding:12px 20px calc(var(--safe-bot) + 12px) 20px;gap:16px}
+  .today-daynum{font-size:2.6rem;padding-right:14px}
+  .today-meta{font-size:.74rem;letter-spacing:.08em}
+  .today-lunar{font-size:.88rem}
+  .add-event-btn{
+    padding:0 18px 0 14px;
+    width:auto;min-width:0;
+    border-radius:14px;
+    gap:8px;
+  }
+  .add-event-btn .add-event-label{
+    display:inline;
+    font-size:.78rem;
+    letter-spacing:.04em;
+    text-transform:uppercase;
+  }
+  .add-event-btn::before{font-size:1.4rem}
+
+  /* Month grid: larger cells */
+  .day{min-height:100px;padding:8px 7px 7px}
+  .solar{font-size:1.3rem}
+  .lunar-num{font-size:.75rem}
+  .event-chip{font-size:.64rem;padding:2px 6px}
+  .event-chip-time{font-size:.6rem}
+
+  /* Week view: richer row */
+  :root{--today-bar-h:88px}
+  .week-list{padding:14px 20px calc(var(--safe-bot) + var(--today-bar-h) + 4px) 20px;gap:12px}
+  .week-row{padding:14px 16px 14px 20px;gap:10px}
+  .week-row::before{width:4px}
+  .wr-left{gap:14px}
+  .wr-daynum{font-size:2.1rem}
+  .wr-dow{font-size:.72rem;letter-spacing:.12em}
+  .wr-monthyear{font-size:.68rem}
+  .wr-lunar{font-size:.92rem}
+  .wr-chip{font-size:.66rem;padding:3px 9px;border-radius:6px}
+  .wr-holiday{font-size:.82rem}
+  .wr-ev{font-size:.86rem;gap:10px}
+  .wr-ev-time{font-size:.74rem;min-width:48px}
+  .wr-ev-allday{font-size:.66rem;min-width:48px}
+  .wr-empty{font-size:.76rem}
+}
+
+/* ── EXPANDED (≥ 905px) ── */
+@media (min-width: 905px){
+  /* Center main app content, cap width */
+  body{max-width:1080px;margin:0 auto;box-shadow:0 0 40px rgba(21,101,192,.08)}
+  .header{padding:calc(var(--safe-top) + 14px) 24px 14px}
+  .header-logo{font-size:1.2rem}
+  .month-year-display{font-size:1rem}
+
+  /* Today bar: more generous */
+  .today-bar{padding:14px 28px calc(var(--safe-bot) + 14px) 28px}
+  .today-daynum{font-size:3rem}
+  .today-lunar{font-size:.95rem}
+
+  /* Month grid: large cells with breathing room */
+  .day{min-height:130px;padding:10px 9px 9px}
+  .solar{font-size:1.45rem}
+  .lunar-num{font-size:.82rem}
+  .event-chip{font-size:.7rem;padding:3px 7px}
+
+  /* Week view: center, cap width */
+  :root{--today-bar-h:100px}
+  .week-list{max-width:820px;margin:0 auto;padding:20px 24px calc(var(--safe-bot) + var(--today-bar-h) + 4px) 24px;gap:14px}
+  .week-row{padding:18px 20px 18px 24px;gap:12px}
+  .wr-left{gap:16px}
+  .wr-daynum{font-size:2.4rem}
+  .wr-lunar{font-size:1rem}
+  .wr-ev{font-size:.92rem}
+
+  /* Sheets: modal center instead of bottom drawer */
+  .sheet{
+    max-width:560px;
+    left:50% !important;
+    transform:translateX(-50%) translateY(100%);
+    border-radius:18px;
+    max-height:86vh;
+  }
+  .sheet.open{transform:translateX(-50%) translateY(0)}
+
+  /* Settings sheet wider */
+  .sheet-body{padding:20px 28px 28px}
+}
+
+/* ── LARGE (≥ 1240px) — optional: stop scaling up ── */
+@media (min-width: 1240px){
+  .day{min-height:150px}
+  .solar{font-size:1.55rem}
+}
 </style>
 </head>
 <body>
@@ -673,7 +1268,11 @@ body{
     <div class="month-year-display" id="monthYearDisplay" onclick="openPicker()"></div>
     <button class="nav-btn" id="btnNext">›</button>
   </div>
-  <div class="header-actions">
+  <div class="view-toggle" role="tablist" aria-label="Chế độ xem">
+    <button class="vt-btn active" id="vtMonth" onclick="setViewMode('month')" role="tab" aria-selected="true">Tháng</button>
+    <button class="vt-btn" id="vtWeek" onclick="setViewMode('week')" role="tab" aria-selected="false">Tuần</button>
+  </div>
+  <div class="header-icons">
     <button class="icon-btn" onclick="openSearch()" title="Tìm kiếm">🔍</button>
     <button class="icon-btn" onclick="openSettings()" title="Cài đặt">⚙️</button>
   </div>
@@ -689,7 +1288,7 @@ body{
 </div>
 
 <!-- WEEKDAYS -->
-<div class="weekdays">
+<div class="weekdays" id="weekdaysBar">
   <div class="wd">CN</div><div class="wd">T2</div><div class="wd">T3</div>
   <div class="wd">T4</div><div class="wd">T5</div><div class="wd">T6</div>
   <div class="wd">T7</div>
@@ -698,15 +1297,17 @@ body{
 <!-- CALENDAR -->
 <div class="scroll-area">
   <div class="cal-grid" id="calGrid"></div>
+  <div class="week-list" id="weekList"></div>
 </div>
 
 <!-- TODAY BAR -->
 <div class="today-bar">
   <div class="today-info">
-    <div class="today-date" id="todayDateText"></div>
+    <div class="today-daynum" id="todayDayNum"></div>
+    <div class="today-meta" id="todayMetaText"></div>
     <div class="today-lunar" id="todayLunarText"></div>
   </div>
-  <button class="add-event-btn" onclick="openDaySheet(todayD,todayM,todayY)">+ Thêm sự kiện</button>
+  <button class="add-event-btn" onclick="openDaySheet(todayD,todayM,todayY)" aria-label="Thêm sự kiện"><span class="add-event-label">Thêm sự kiện</span></button>
 </div>
 
 <!-- OVERLAY -->
@@ -784,32 +1385,62 @@ body{
       </div>
     </div>
     <div class="settings-section">
+      <h4>Thông báo</h4>
+      <div class="settings-row">
+        <div><div class="settings-label">Bật thông báo</div><div class="settings-sub" id="notifStatusSub">Chưa bật — bấm để cấp quyền</div></div>
+        <div class="toggle" id="togNotifEnabled" onclick="toggleNotifEnabled()"></div>
+      </div>
+      <div id="notifOptions" style="display:none">
+        <div class="settings-sub" style="margin:14px 0 6px;font-weight:700;text-transform:uppercase;font-size:.65rem;letter-spacing:.08em;color:var(--text-dim)">Nhắc sớm (khi mở app)</div>
+        <div class="checkbox-row" onclick="toggleNotifOpenTrigger('d3')">
+          <div class="cb" id="cbNotifD3"></div>
+          <div><div class="settings-label">3 ngày trước</div><div class="settings-sub">Hữu ích cho đặt vé, chuẩn bị</div></div>
+        </div>
+        <div class="checkbox-row" onclick="toggleNotifOpenTrigger('d1')">
+          <div class="cb" id="cbNotifD1"></div>
+          <div><div class="settings-label">1 ngày trước</div><div class="settings-sub">Tổng hợp events ngày mai</div></div>
+        </div>
+
+        <div class="settings-sub" style="margin:14px 0 6px;font-weight:700;text-transform:uppercase;font-size:.65rem;letter-spacing:.08em;color:var(--text-dim)">Nhắc khi gần giờ (app đang mở)</div>
+        <div class="checkbox-row" onclick="toggleNotifInSession('h1')">
+          <div class="cb" id="cbNotifH1"></div>
+          <div><div class="settings-label">1 giờ trước</div></div>
+        </div>
+        <div class="checkbox-row" onclick="toggleNotifInSession('m15')">
+          <div class="cb" id="cbNotifM15"></div>
+          <div><div class="settings-label">15 phút trước</div></div>
+        </div>
+        <div class="checkbox-row" onclick="toggleNotifInSession('m5')">
+          <div class="cb" id="cbNotifM5"></div>
+          <div><div class="settings-label">5 phút trước</div></div>
+        </div>
+        <div class="checkbox-row" onclick="toggleNotifInSession('m0')">
+          <div class="cb" id="cbNotifM0"></div>
+          <div><div class="settings-label">Đúng giờ bắt đầu</div></div>
+        </div>
+
+        <div class="settings-row" style="margin-top:14px">
+          <div><div class="settings-label">Sự kiện cả ngày</div><div class="settings-sub">Nhắc 20:00 hôm trước</div></div>
+          <div class="toggle" id="togNotifAllDay" onclick="toggleSimpleNotif('notifAllDay')"></div>
+        </div>
+        <div class="settings-row">
+          <div><div class="settings-label">Ngày lễ lớn</div><div class="settings-sub">Tết, 30/4, 2/9, Giỗ Tổ…</div></div>
+          <div class="toggle" id="togNotifHolidays" onclick="toggleSimpleNotif('notifHolidays')"></div>
+        </div>
+        <div class="settings-row">
+          <div><div class="settings-label">Báo lại sau 10 phút</div><div class="settings-sub">Nút snooze trên thông báo</div></div>
+          <div class="toggle" id="togNotifSnooze" onclick="toggleSimpleNotif('notifSnooze')"></div>
+        </div>
+        <div class="form-hint" style="margin-top:12px">
+          <b>Lưu ý:</b> "Nhắc khi gần giờ" chỉ hoạt động khi app đang mở (hoặc vừa mở trong session gần đây). Lịch Việt chưa chạy background push.
+        </div>
+      </div>
+    </div>
+    <div class="settings-section">
       <h4>Dữ liệu</h4>
       <button class="export-btn" onclick="openImport()">📥 Import từ Google Calendar (.ics)</button>
       <button class="export-btn" style="margin-top:8px" onclick="exportICS()">📤 Xuất file .ics sang Google Calendar</button>
       <button class="export-btn" style="margin-top:8px;border-color:var(--red-soft);color:var(--red-soft)" onclick="clearAllEvents()">🗑️ Xóa tất cả sự kiện</button>
-    </div>
-    <div class="settings-section">
-      <h4>Google Calendar Sync</h4>
-      <div id="gcalStatusRow" class="settings-row">
-        <div>
-          <div class="settings-label" id="gcalStatusLabel">Chưa kết nối</div>
-          <div class="settings-sub" id="gcalStatusSub">Kết nối để sync 2 chiều</div>
-        </div>
-        <div id="gcalStatusDot" style="width:10px;height:10px;border-radius:50%;background:var(--text-muted);flex-shrink:0"></div>
-      </div>
-      <button class="export-btn" id="gcalConnectBtn" onclick="openGcalSetup()" style="margin-top:2px">
-        🔗 Kết nối Google Calendar
-      </button>
-      <div id="gcalSyncActions" style="display:none;margin-top:8px;display:none">
-        <div style="display:flex;gap:8px">
-          <button class="export-btn" style="flex:1" onclick="gcalPull()">⬇️ Tải về</button>
-          <button class="export-btn" style="flex:1" onclick="gcalPush()">⬆️ Đẩy lên</button>
-        </div>
-        <button class="export-btn" style="margin-top:8px;border-color:var(--red-soft);color:var(--red-soft)" onclick="gcalDisconnect()">
-          🔌 Ngắt kết nối
-        </button>
-      </div>
     </div>
     <div class="settings-section">
       <h4>Về ứng dụng</h4>
@@ -823,93 +1454,6 @@ body{
         <div><div class="settings-label">Phạm vi</div><div class="settings-sub">1960 – 2099</div></div>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- GOOGLE CALENDAR SETUP SHEET -->
-<div class="sheet" id="gcalSheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-header">
-    <div class="sheet-title">🔗 Kết nối Google Calendar</div>
-    <button class="sheet-close" onclick="closeAllSheets()">×</button>
-  </div>
-  <div class="sheet-body">
-
-    <!-- Step 1: Nhập Client ID -->
-    <div id="gcalStep1">
-      <div style="background:var(--primary-pale);border:1px solid var(--primary-dim);border-radius:12px;padding:14px;margin-bottom:16px">
-        <div style="font-size:.82rem;font-weight:700;color:var(--primary);margin-bottom:10px">📋 Cách lấy Client ID (một lần duy nhất)</div>
-        <div style="font-size:.76rem;color:var(--text-dim);line-height:2">
-          <b style="color:var(--text-body)">1.</b> Vào <a href="https://console.cloud.google.com" target="_blank" style="color:var(--primary);font-weight:600">console.cloud.google.com</a><br>
-          <b style="color:var(--text-body)">2.</b> Tạo project mới → bật <b>Google Calendar API</b><br>
-          <b style="color:var(--text-body)">3.</b> <b>APIs & Services</b> → <b>OAuth consent screen</b> → External<br>
-          <b style="color:var(--text-body)">4.</b> <b>Credentials</b> → <b>+ Create</b> → <b>OAuth client ID</b><br>
-          <b style="color:var(--text-body)">5.</b> Type: <b>Web application</b><br>
-          <b style="color:var(--text-body)">6.</b> Authorized JS origins: <code id="gcalOriginCode" style="background:var(--surface3);padding:2px 6px;border-radius:4px;font-size:.75rem;cursor:pointer" onclick="copyOrigin()">bấm để copy</code><br>
-          <b style="color:var(--text-body)">7.</b> Copy <b>Client ID</b> → dán vào ô dưới
-        </div>
-      </div>
-
-      <label style="font-size:.78rem;font-weight:700;color:var(--text-dim);display:block;margin-bottom:6px">
-        CLIENT ID <span style="color:var(--accent)">*</span>
-      </label>
-      <input class="form-input" id="gcalClientIdInput"
-        placeholder="xxxxxxxxxxxx.apps.googleusercontent.com"
-        style="font-size:.78rem;font-family:monospace">
-      <div style="font-size:.7rem;color:var(--text-muted);margin-top:4px;margin-bottom:14px">
-        🔒 Lưu trên thiết bị của bạn, không gửi đi đâu cả
-      </div>
-
-      <button class="form-submit" onclick="gcalSaveClientId()">
-        Lưu & Kết nối Google →
-      </button>
-    </div>
-
-    <!-- Step 2: Đã kết nối -->
-    <div id="gcalStep2" style="display:none">
-      <div style="text-align:center;padding:16px 0 20px">
-        <div id="gcalUserAvatar" style="width:64px;height:64px;border-radius:50%;background:var(--primary-pale);margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:2rem;border:3px solid var(--primary-dim)">👤</div>
-        <div id="gcalUserName" style="font-size:1rem;font-weight:700;color:var(--text-body)"></div>
-        <div id="gcalUserEmail" style="font-size:.78rem;color:var(--text-dim);margin-top:2px"></div>
-        <div style="display:inline-flex;align-items:center;gap:5px;background:var(--green-pale);border:1px solid var(--green);border-radius:20px;padding:4px 12px;margin-top:8px;font-size:.72rem;color:var(--green);font-weight:700">
-          <span style="width:6px;height:6px;border-radius:50%;background:var(--green);display:inline-block"></span>
-          Đã kết nối
-        </div>
-      </div>
-
-      <!-- Chọn lịch -->
-      <div style="font-size:.78rem;font-weight:700;color:var(--text-dim);margin-bottom:8px">CHỌN LỊCH ĐỂ SYNC</div>
-      <div id="gcalCalendarList" style="margin-bottom:16px">
-        <div style="color:var(--text-muted);font-size:.8rem;text-align:center;padding:12px">Đang tải danh sách lịch...</div>
-      </div>
-
-      <!-- Sync actions -->
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <button class="form-submit" style="flex:1;background:linear-gradient(135deg,var(--green) 0%,#43a047 100%)" onclick="gcalPull()">
-          ⬇️ Tải về
-        </button>
-        <button class="form-submit" style="flex:1" onclick="gcalPush()">
-          ⬆️ Đẩy lên
-        </button>
-      </div>
-      <div style="font-size:.7rem;color:var(--text-muted);text-align:center;margin-bottom:14px">
-        Tải về: GCal → Lịch Việt &nbsp;|&nbsp; Đẩy lên: Lịch Việt → GCal
-      </div>
-
-      <!-- Sync log -->
-      <div id="gcalSyncLog" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:.75rem;color:var(--text-dim);max-height:120px;overflow-y:auto;line-height:1.8"></div>
-
-      <button class="export-btn" style="border-color:var(--accent-soft);color:var(--accent-soft)" onclick="gcalDisconnect()">
-        🔌 Ngắt kết nối
-      </button>
-    </div>
-
-    <!-- Loading state -->
-    <div id="gcalLoading" style="display:none;text-align:center;padding:32px 0">
-      <div class="gcal-spinner"></div>
-      <div id="gcalLoadingText" style="font-size:.85rem;color:var(--text-dim);margin-top:14px">Đang kết nối...</div>
-    </div>
-
   </div>
 </div>
 
@@ -1086,27 +1630,172 @@ function getLe(d,m,y){
 }
 
 // ═══════════════════════════════════════════════════
-// MODULE 4: EVENT STORE (localStorage)
+// MODULE 4: EVENT STORE (localStorage) — with recurring support
 // ═══════════════════════════════════════════════════
-const STORE_KEY='lichviet_events_v1';
+// Schema v2:
+//   events:           { "YYYY-MM-DD": [event, ...] }  — static one-off events (as before)
+//   recurringRules:   [ ruleEvent, ... ]              — repeating series (expand on the fly)
+// ruleEvent schema:
+//   { id, name, time, note, uid,
+//     rrule: { freq: "WEEKLY"|"YEARLY_LUNAR"|"YEARLY_SOLAR", interval:1, count?, until?,
+//              anchorDate: "YYYY-MM-DD" (solar), anchorLunar?: {ld,lm,ly,leap} },
+//     exdates: ["YYYY-MM-DD", ...],         // occurrences user skipped
+//     overrides: { "YYYY-MM-DD": {partial event override} } }
+const STORE_KEY_V1='lichviet_events_v1';
+const STORE_KEY='lichviet_events_v2';
 let events={};
-function loadEvents(){try{events=JSON.parse(localStorage.getItem(STORE_KEY)||'{}')}catch{events={}}}
-function saveEvents(){localStorage.setItem(STORE_KEY,JSON.stringify(events))}
+let recurringRules=[];
+
+function loadEvents(){
+  // Try v2 first
+  const raw=localStorage.getItem(STORE_KEY);
+  if(raw){
+    try{
+      const data=JSON.parse(raw);
+      events=data.events||{};
+      recurringRules=data.recurringRules||[];
+      return;
+    }catch{events={};recurringRules=[]}
+  }
+  // Migrate from v1: copy static events as-is, no rules yet
+  const v1raw=localStorage.getItem(STORE_KEY_V1);
+  if(v1raw){
+    try{
+      events=JSON.parse(v1raw)||{};
+      recurringRules=[];
+      saveEvents(); // persist as v2
+    }catch{events={};recurringRules=[]}
+  }else{events={};recurringRules=[]}
+}
+function saveEvents(){
+  localStorage.setItem(STORE_KEY,JSON.stringify({events,recurringRules}));
+}
 function dayKey(d,m,y){return`${y}-${String(m).padStart(2,'0')}-${String(d).padStart(2,'0')}`}
-function getEvents(d,m,y){return events[dayKey(d,m,y)]||[]}
+
+// ── Get events for one day = static + expanded recurring ──
+function getEvents(d,m,y){
+  const k=dayKey(d,m,y);
+  const staticEvs=events[k]||[];
+  const recurringInstances=expandRecurringForDay(d,m,y);
+  return [...staticEvs,...recurringInstances];
+}
+
+// ── Expand: loop all rules, check if any fires on this day ──
+function expandRecurringForDay(d,m,y){
+  const k=dayKey(d,m,y);
+  const out=[];
+  for(const rule of recurringRules){
+    if(rule.exdates&&rule.exdates.includes(k))continue;
+    if(!ruleFiresOn(rule,d,m,y))continue;
+    const override=rule.overrides&&rule.overrides[k];
+    out.push({
+      id: rule.id,
+      ruleId: rule.id,
+      fromRule: true,
+      occurrenceKey: k,
+      name: (override&&override.name)||rule.name,
+      time: (override&&override.time!=null)?override.time:rule.time,
+      note: (override&&override.note!=null)?override.note:rule.note,
+      uid: rule.uid,
+      recurring: true,
+      freq: rule.rrule.freq,
+    });
+  }
+  return out;
+}
+
+// ── Does a rule fire on given solar date? ──
+function ruleFiresOn(rule,d,m,y){
+  const r=rule.rrule;
+  const [ay,am,ad]=r.anchorDate.split('-').map(Number);
+  const anchorJD=jdFromDate(ad,am,ay);
+  const targetJD=jdFromDate(d,m,y);
+  if(targetJD<anchorJD)return false;
+
+  // UNTIL bound
+  if(r.until){
+    const [uy,um,ud]=r.until.split('-').map(Number);
+    if(targetJD>jdFromDate(ud,um,uy))return false;
+  }
+
+  if(r.freq==='WEEKLY'){
+    const interval=r.interval||1;
+    const diffDays=targetJD-anchorJD;
+    if(diffDays%(7*interval)!==0)return false;
+    if(r.count&&(diffDays/(7*interval))>=r.count)return false;
+    return true;
+  }
+  if(r.freq==='YEARLY_LUNAR'){
+    const anchor=r.anchorLunar||solar2lunar(ad,am,ay);
+    const target=solar2lunar(d,m,y);
+    if(target.ld!==anchor.ld)return false;
+    if(target.lm!==anchor.lm)return false;
+    // Leap month handling: match leap flag if anchor was leap; otherwise prefer non-leap
+    if(anchor.leap){if(!target.leap)return false}
+    else{if(target.leap)return false}
+    // Count/until check
+    if(r.count){
+      const yearsDiff=target.ly-anchor.ly;
+      if(yearsDiff<0||yearsDiff>=r.count)return false;
+    }
+    return true;
+  }
+  if(r.freq==='YEARLY_SOLAR'){
+    // Match same day+month each year (e.g. birthday, anniversary)
+    if(m!==am)return false;
+    const yearsDiff=y-ay;
+    if(yearsDiff<0)return false;
+    if(r.count&&yearsDiff>=r.count)return false;
+
+    // Edge case: anchor is Feb 29 (leap year)
+    if(am===2&&ad===29){
+      const isLeapY=(y%4===0&&y%100!==0)||(y%400===0);
+      return isLeapY ? d===29 : d===28; // fallback to Feb 28 in non-leap years
+    }
+    // Normal case: exact same day
+    return d===ad;
+  }
+  return false;
+}
+
 function addEvent(d,m,y,ev){
   let k=dayKey(d,m,y);
   if(!events[k])events[k]=[];
   events[k].push({...ev,id:Date.now()});
   saveEvents();
+  if(typeof scheduleAllInSessionNotifs==='function'&&settings.notifEnabled)scheduleAllInSessionNotifs();
 }
 function delEvent(d,m,y,id){
   let k=dayKey(d,m,y);
   if(events[k])events[k]=events[k].filter(e=>e.id!==id);
   saveEvents();
+  if(typeof scheduleAllInSessionNotifs==='function'&&settings.notifEnabled)scheduleAllInSessionNotifs();
 }
+
+// ── Recurring CRUD ──
+function addRecurringRule(rule){
+  recurringRules.push({...rule,id:Date.now()});
+  saveEvents();
+  if(typeof scheduleAllInSessionNotifs==='function'&&settings.notifEnabled)scheduleAllInSessionNotifs();
+}
+function deleteOccurrence(ruleId,occurrenceKey){
+  const rule=recurringRules.find(r=>r.id===ruleId);
+  if(!rule)return;
+  if(!rule.exdates)rule.exdates=[];
+  if(!rule.exdates.includes(occurrenceKey))rule.exdates.push(occurrenceKey);
+  saveEvents();
+  if(typeof scheduleAllInSessionNotifs==='function'&&settings.notifEnabled)scheduleAllInSessionNotifs();
+}
+function deleteSeries(ruleId){
+  recurringRules=recurringRules.filter(r=>r.id!==ruleId);
+  saveEvents();
+  if(typeof scheduleAllInSessionNotifs==='function'&&settings.notifEnabled)scheduleAllInSessionNotifs();
+}
+
 function clearAllEvents(){
-  if(confirm('Xóa tất cả sự kiện đã tạo?')){events={};saveEvents();render();toast('Đã xóa tất cả')}
+  if(confirm('Xóa tất cả sự kiện đã tạo?')){
+    events={};recurringRules=[];saveEvents();render();toast('Đã xóa tất cả');
+  }
 }
 loadEvents();
 
@@ -1114,7 +1803,17 @@ loadEvents();
 // MODULE 5: SETTINGS
 // ═══════════════════════════════════════════════════
 const SETTINGS_KEY='lichviet_settings_v1';
-let settings={showHD:true,showCC:true,showLE:true};
+let settings={
+  showHD:true,showCC:true,showLE:true,viewMode:'month',
+  // ── Notifications ──
+  notifEnabled:false,
+  notifOpenTrigger:{d1:true,d3:false},   // Nhóm B: nhắc khi mở app
+  notifInSession:{h1:false,m15:true,m5:false,m0:false}, // Nhóm A: nhắc khi gần giờ
+  notifAllDay:true,
+  notifAllDayHour:20,
+  notifHolidays:false,
+  notifSnooze:true,
+};
 function loadSettings(){try{Object.assign(settings,JSON.parse(localStorage.getItem(SETTINGS_KEY)||'{}'))}catch{}}
 function saveSettings(){localStorage.setItem(SETTINGS_KEY,JSON.stringify(settings))}
 function toggleSetting(k){
@@ -1126,8 +1825,314 @@ function applySettingsUI(){
   document.getElementById('togHD').classList.toggle('on',settings.showHD);
   document.getElementById('togCC').classList.toggle('on',settings.showCC);
   document.getElementById('togLE').classList.toggle('on',settings.showLE);
+  applyNotifSettingsUI();
+}
+
+function applyNotifSettingsUI(){
+  const enabled=settings.notifEnabled&&(typeof Notification!=='undefined'&&Notification.permission==='granted');
+  document.getElementById('togNotifEnabled').classList.toggle('on',enabled);
+  document.getElementById('notifOptions').style.display=enabled?'':'none';
+  const sub=document.getElementById('notifStatusSub');
+  if(typeof Notification==='undefined')sub.textContent='Trình duyệt không hỗ trợ thông báo';
+  else if(Notification.permission==='denied')sub.textContent='Bị chặn — mở cài đặt trình duyệt để bật lại';
+  else if(enabled)sub.textContent='Đã bật — nhắc theo lựa chọn dưới';
+  else sub.textContent='Chưa bật — bấm để cấp quyền';
+
+  document.getElementById('cbNotifD3').classList.toggle('on',!!settings.notifOpenTrigger.d3);
+  document.getElementById('cbNotifD1').classList.toggle('on',!!settings.notifOpenTrigger.d1);
+  document.getElementById('cbNotifH1').classList.toggle('on',!!settings.notifInSession.h1);
+  document.getElementById('cbNotifM15').classList.toggle('on',!!settings.notifInSession.m15);
+  document.getElementById('cbNotifM5').classList.toggle('on',!!settings.notifInSession.m5);
+  document.getElementById('cbNotifM0').classList.toggle('on',!!settings.notifInSession.m0);
+  document.getElementById('togNotifAllDay').classList.toggle('on',!!settings.notifAllDay);
+  document.getElementById('togNotifHolidays').classList.toggle('on',!!settings.notifHolidays);
+  document.getElementById('togNotifSnooze').classList.toggle('on',!!settings.notifSnooze);
+}
+
+async function toggleNotifEnabled(){
+  if(!settings.notifEnabled){
+    const ok=await requestNotifPermission();
+    if(!ok){applyNotifSettingsUI();return}
+    settings.notifEnabled=true;saveSettings();
+    applyNotifSettingsUI();
+    checkUpcomingOnOpen();
+    scheduleAllInSessionNotifs();
+    toast('Đã bật thông báo ✓');
+  }else{
+    settings.notifEnabled=false;saveSettings();
+    applyNotifSettingsUI();
+    for(const h of notifTimers.values())clearTimeout(h);
+    notifTimers.clear();
+    toast('Đã tắt thông báo');
+  }
+}
+
+function toggleNotifOpenTrigger(k){
+  settings.notifOpenTrigger[k]=!settings.notifOpenTrigger[k];
+  saveSettings();
+  applyNotifSettingsUI();
+}
+
+function toggleNotifInSession(k){
+  settings.notifInSession[k]=!settings.notifInSession[k];
+  saveSettings();
+  applyNotifSettingsUI();
+  if(settings.notifEnabled)scheduleAllInSessionNotifs();
+}
+
+function toggleSimpleNotif(k){
+  settings[k]=!settings[k];
+  saveSettings();
+  applyNotifSettingsUI();
+  if(settings.notifEnabled)scheduleAllInSessionNotifs();
 }
 loadSettings();
+
+// ═══════════════════════════════════════════════════
+// MODULE 5b: NOTIFICATIONS
+// ═══════════════════════════════════════════════════
+// Strategy: Option A — main-thread setTimeout + Service Worker showNotification()
+// Nhóm A "in-session": schedule setTimeout khi app mở
+// Nhóm B "open-trigger": quét events sắp tới khi app load
+//
+// Dedup: mỗi event lưu `notifiedStages: {d3,d1,h1,m15,m5,m0}` — true sau khi đã fire
+// Stages được reset nếu event được edit (ngày/giờ đổi)
+
+const NOTIF_LEAD_SECONDS={h1:3600,m15:900,m5:300,m0:0};
+let notifTimers=new Map(); // key = `${eventId}-${stage}` → setTimeout handle
+
+function notifSupported(){
+  return 'Notification' in window && 'serviceWorker' in navigator;
+}
+
+async function requestNotifPermission(){
+  if(!notifSupported()){toast('Trình duyệt không hỗ trợ thông báo');return false}
+  if(Notification.permission==='granted')return true;
+  if(Notification.permission==='denied'){
+    toast('Bạn đã chặn thông báo — vào cài đặt trình duyệt để bật lại');
+    return false;
+  }
+  const result=await Notification.requestPermission();
+  return result==='granted';
+}
+
+async function showNotif(title,body,tag,data){
+  if(Notification.permission!=='granted')return;
+  try{
+    const reg=await navigator.serviceWorker.ready;
+    const actions=settings.notifSnooze?[{action:'snooze',title:'Báo lại sau 10 phút'},{action:'dismiss',title:'Đã biết'}]:[];
+    await reg.showNotification(title,{
+      body,tag:tag||'lichviet-'+Date.now(),
+      icon:'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 192 192\'%3E%3Crect width=\'192\' height=\'192\' rx=\'40\' fill=\'%231565c0\'/%3E%3Ctext x=\'96\' y=\'130\' text-anchor=\'middle\' font-size=\'110\' fill=\'%23ffca28\'%3E🗓%3C/text%3E%3C/svg%3E',
+      badge:'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' viewBox=\'0 0 72 72\'%3E%3Crect width=\'72\' height=\'72\' rx=\'16\' fill=\'%231565c0\'/%3E%3C/svg%3E',
+      actions,data:data||{},
+    });
+  }catch(e){console.warn('showNotification failed',e)}
+}
+
+// ── Schedule a single timer for an event/stage ──
+function scheduleTimer(eventId,stage,fireAt,payload){
+  const now=Date.now();
+  const delay=fireAt-now;
+  if(delay<0||delay>24*3600*1000)return; // skip if past or >24h
+  const key=eventId+'-'+stage;
+  if(notifTimers.has(key))clearTimeout(notifTimers.get(key));
+  const handle=setTimeout(()=>{
+    notifTimers.delete(key);
+    showNotif(payload.title,payload.body,'ev-'+eventId+'-'+stage,{eventId,stage,dateKey:payload.dateKey});
+    markNotified(eventId,stage,payload.dateKey);
+  },delay);
+  notifTimers.set(key,handle);
+}
+
+// ── Schedule all in-session timers for next 24h ──
+function scheduleAllInSessionNotifs(){
+  // Clear existing
+  for(const h of notifTimers.values())clearTimeout(h);
+  notifTimers.clear();
+  if(!settings.notifEnabled||Notification.permission!=='granted')return;
+
+  const now=new Date();
+  const nowTS=now.getTime();
+  // Scan next 36h window (cover "all-day" notification at 20:00 hôm trước)
+  for(let offset=0;offset<=2;offset++){
+    const d=new Date(nowTS+offset*86400000);
+    const evs=getEvents(d.getDate(),d.getMonth()+1,d.getFullYear());
+    for(const ev of evs){
+      if(ev.fromRule===true&&!ev.time&&!settings.notifAllDay)continue;
+      scheduleEventNotifs(ev,d.getDate(),d.getMonth()+1,d.getFullYear());
+    }
+    // Holidays
+    if(settings.notifHolidays){
+      const hols=getLe(d.getDate(),d.getMonth()+1,d.getFullYear());
+      for(const h of hols){
+        scheduleHolidayNotif(h,d.getDate(),d.getMonth()+1,d.getFullYear());
+      }
+    }
+  }
+}
+
+function scheduleEventNotifs(ev,d,m,y){
+  const dateKey=dayKey(d,m,y);
+  if(ev.time){
+    const [hh,mm]=ev.time.split(':').map(Number);
+    const eventTS=new Date(y,m-1,d,hh,mm,0).getTime();
+    const payload={
+      title:`⏰ ${ev.name}`,
+      body:`${ev.time} · ngày ${d}/${m}`,
+      dateKey,
+    };
+    for(const [stage,lead] of Object.entries(NOTIF_LEAD_SECONDS)){
+      if(!settings.notifInSession[stage])continue;
+      if(isNotified(ev,stage,dateKey))continue;
+      scheduleTimer(ev.id||ev.ruleId||Date.now(),stage,eventTS-lead*1000,payload);
+    }
+  }else if(settings.notifAllDay){
+    // All-day: nhắc vào hôm trước lúc notifAllDayHour
+    const prevDay=new Date(y,m-1,d,settings.notifAllDayHour,0,0);
+    prevDay.setDate(prevDay.getDate()-1);
+    const stage='d1-allday';
+    if(!isNotified(ev,stage,dateKey)){
+      scheduleTimer(ev.id||ev.ruleId||Date.now(),stage,prevDay.getTime(),{
+        title:`📅 Ngày mai: ${ev.name}`,
+        body:`Sự kiện cả ngày · ${d}/${m}/${y}`,
+        dateKey,
+      });
+    }
+  }
+}
+
+function scheduleHolidayNotif(hol,d,m,y){
+  // Nhắc lễ vào 20:00 hôm trước (in-session only)
+  const prevDay=new Date(y,m-1,d,settings.notifAllDayHour,0,0);
+  prevDay.setDate(prevDay.getDate()-1);
+  const holKey='hol-'+dayKey(d,m,y)+'-'+hol.name.substring(0,20);
+  if(settings.notifiedKeys&&settings.notifiedKeys.includes(holKey))return;
+  scheduleTimer(holKey,'holiday',prevDay.getTime(),{
+    title:`🎉 Ngày mai: ${hol.name}`,
+    body:`Ngày lễ · ${d}/${m}/${y}`,
+    dateKey:dayKey(d,m,y),
+  });
+}
+
+// ── Open-trigger scan (Nhóm B): chạy khi app load ──
+function checkUpcomingOnOpen(){
+  if(!settings.notifEnabled||Notification.permission!=='granted')return;
+  const now=new Date();
+  const enabledLeads=[];
+  if(settings.notifOpenTrigger.d1)enabledLeads.push(1);
+  if(settings.notifOpenTrigger.d3)enabledLeads.push(3);
+  if(!enabledLeads.length&&!settings.notifHolidays)return;
+
+  for(const leadDays of enabledLeads){
+    const target=new Date(now.getTime()+leadDays*86400000);
+    const td=target.getDate(),tm=target.getMonth()+1,ty=target.getFullYear();
+    const evs=getEvents(td,tm,ty);
+    const holidays=settings.notifHolidays?getLe(td,tm,ty):[];
+
+    const stage='d'+leadDays;
+    const dateKey=dayKey(td,tm,ty);
+
+    // Dedup per-stage-per-date
+    const summaryKey=`sum-${leadDays}d-${dateKey}`;
+    if(settings.notifiedKeys&&settings.notifiedKeys.includes(summaryKey))continue;
+
+    const allItems=[...holidays.map(h=>({name:h.name,holiday:true})),...evs];
+    if(!allItems.length)continue;
+
+    if(allItems.length===1){
+      const it=allItems[0];
+      showNotif(
+        leadDays===1?`📅 Ngày mai: ${it.name}`:`📅 Sau ${leadDays} ngày: ${it.name}`,
+        `${td}/${tm}/${ty}${it.time?' · '+it.time:''}`,
+        'upcoming-'+dateKey+'-'+stage,
+        {dateKey}
+      );
+    }else{
+      showNotif(
+        leadDays===1?`📅 Ngày mai có ${allItems.length} sự kiện`:`📅 Sau ${leadDays} ngày có ${allItems.length} sự kiện`,
+        allItems.slice(0,3).map(it=>'• '+it.name).join('\n')+(allItems.length>3?`\n…+${allItems.length-3} khác`:''),
+        'upcoming-'+dateKey+'-'+stage,
+        {dateKey}
+      );
+    }
+
+    if(!settings.notifiedKeys)settings.notifiedKeys=[];
+    settings.notifiedKeys.push(summaryKey);
+    // Prune: giữ tối đa 200 keys gần nhất
+    if(settings.notifiedKeys.length>200)settings.notifiedKeys=settings.notifiedKeys.slice(-200);
+    saveSettings();
+  }
+}
+
+// ── Catch-up: scan events trong 30 phút qua đã miss ──
+function catchupMissedNotifs(){
+  if(!settings.notifEnabled||Notification.permission!=='granted')return;
+  const now=Date.now();
+  const windowStart=now-30*60*1000;
+
+  for(let offset=-1;offset<=0;offset++){
+    const d=new Date(now+offset*86400000);
+    const evs=getEvents(d.getDate(),d.getMonth()+1,d.getFullYear());
+    for(const ev of evs){
+      if(!ev.time)continue;
+      const [hh,mm]=ev.time.split(':').map(Number);
+      const evTS=new Date(d.getFullYear(),d.getMonth(),d.getDate(),hh,mm,0).getTime();
+      if(evTS<windowStart||evTS>now)continue;
+      const id=ev.id||ev.ruleId;
+      const dateKey=dayKey(d.getDate(),d.getMonth()+1,d.getFullYear());
+      if(isNotified(ev,'missed',dateKey))continue;
+      showNotif(
+        `⏰ Bỏ lỡ: ${ev.name}`,
+        `${ev.time} · hôm nay`,
+        'missed-'+id+'-'+dateKey,
+        {eventId:id,dateKey}
+      );
+      markNotified(ev,'missed',dateKey);
+    }
+  }
+}
+
+function isNotified(ev,stage,dateKey){
+  if(!ev)return false;
+  // Static events lưu flag trực tiếp; rule events lưu qua settings.notifiedKeys
+  if(ev.fromRule){
+    const key=`${ev.ruleId}-${stage}-${dateKey}`;
+    return (settings.notifiedKeys||[]).includes(key);
+  }
+  return ev.notifiedStages&&ev.notifiedStages[stage+':'+dateKey];
+}
+
+function markNotified(ev,stage,dateKey){
+  if(!ev)return;
+  if(ev.fromRule||typeof ev==='string'){
+    // String = ID-based (holiday), fromRule = recurring
+    if(!settings.notifiedKeys)settings.notifiedKeys=[];
+    const key=typeof ev==='string'?ev:`${ev.ruleId}-${stage}-${dateKey}`;
+    if(!settings.notifiedKeys.includes(key)){
+      settings.notifiedKeys.push(key);
+      if(settings.notifiedKeys.length>200)settings.notifiedKeys=settings.notifiedKeys.slice(-200);
+      saveSettings();
+    }
+  }else{
+    // Static event: find and update in events[]
+    const k=dateKey||Object.keys(events).find(k=>(events[k]||[]).some(e=>e.id===ev.id));
+    if(!k||!events[k])return;
+    const target=events[k].find(e=>e.id===ev.id);
+    if(target){
+      if(!target.notifiedStages)target.notifiedStages={};
+      target.notifiedStages[stage+':'+dateKey]=true;
+      saveEvents();
+    }
+  }
+}
+
+// Re-arm on visibility change (tab back to foreground → re-schedule)
+document.addEventListener('visibilitychange',()=>{
+  if(document.visibilityState==='visible'&&settings.notifEnabled){
+    scheduleAllInSessionNotifs();
+  }
+});
 
 // ═══════════════════════════════════════════════════
 // MODULE 6: STATE & RENDER
@@ -1135,29 +2140,171 @@ loadSettings();
 const now=new Date();
 let todayD=now.getDate(),todayM=now.getMonth()+1,todayY=now.getFullYear();
 let curM=todayM,curY=todayY;
+// Week view anchor: JD của Chủ Nhật tuần đang xem
+let curWeekJD = jdFromDate(todayD, todayM, todayY) - now.getDay();
+
+function setViewMode(mode){
+  if(mode!=='month'&&mode!=='week')mode='month';
+  settings.viewMode=mode;
+  saveSettings();
+  document.getElementById('vtMonth').classList.toggle('active',mode==='month');
+  document.getElementById('vtMonth').setAttribute('aria-selected',mode==='month');
+  document.getElementById('vtWeek').classList.toggle('active',mode==='week');
+  document.getElementById('vtWeek').setAttribute('aria-selected',mode==='week');
+  document.getElementById('calGrid').classList.toggle('hidden',mode!=='month');
+  document.getElementById('weekList').classList.toggle('active',mode==='week');
+  document.getElementById('weekdaysBar').classList.toggle('hidden',mode==='week');
+  // Khi chuyển sang week, snap curWeekJD vào tuần chứa ngày 15 của tháng đang xem
+  if(mode==='week'){
+    const midJD=jdFromDate(15,curM,curY);
+    const midDate=new Date(curY,curM-1,15);
+    curWeekJD=midJD-midDate.getDay();
+  }
+  render();
+}
+
+function navigate(dir){
+  // dir: -1 lùi, +1 tiến
+  if(settings.viewMode==='week'){
+    curWeekJD+=7*dir;
+    // Sync curM/curY theo ngày giữa tuần (thứ 4) để month label hợp lý
+    const mid=jdToDate(curWeekJD+3);
+    curM=mid.m;curY=mid.y;
+  }else{
+    curM+=dir;
+    if(curM<1){curM=12;curY--}
+    else if(curM>12){curM=1;curY++}
+  }
+  render();
+}
 
 function render(){
+  if(settings.viewMode==='week'){renderWeek();return}
+  renderMonth();
+}
+
+function updateTopStrips(){
+  const mid=solar2lunar(15,curM,curY);
+  const namCC=canChiNam(mid.ly);
+  const myEl=document.getElementById('monthYearDisplay');
+  if(settings.viewMode==='week'){
+    const a=jdToDate(curWeekJD),b=jdToDate(curWeekJD+6);
+    const sameMonth=a.m===b.m&&a.y===b.y;
+    myEl.textContent=sameMonth
+      ?`${a.d}–${b.d}/${a.m}/${a.y}`
+      :`${a.d}/${a.m} – ${b.d}/${b.m}/${b.y}`;
+  }else{
+    myEl.textContent=`Tháng ${curM} / ${curY}`;
+  }
+  document.getElementById('lunarStripText').innerHTML=
+    `T.${THANG[mid.lm]}${mid.leap?' Nhuận':''} âm – <strong>${namCC}</strong>`;
+
+  const tLunar=solar2lunar(todayD,todayM,todayY);
+  const tCC=canChiNam(tLunar.ly);
+  document.getElementById('todayDayNum').textContent=todayD;
+  document.getElementById('todayMetaText').innerHTML=
+    `<span class="today-dow">${DOW[now.getDay()]}</span>`+
+    `<span class="today-monthyear">Th.${todayM} · ${todayY}</span>`;
+  const lunarDay=NGAY[tLunar.ld]||tLunar.ld;
+  const lunarMonth=tLunar.lm===1?'Tháng Giêng':'Tháng '+THANG[tLunar.lm];
+  document.getElementById('todayLunarText').innerHTML=
+    `<strong>${lunarDay}</strong> ${lunarMonth}${tLunar.leap?' Nhuận':''} · ${tCC}`;
+}
+
+function renderWeek(){
+  updateTopStrips();
+  const list=document.getElementById('weekList');
+  list.innerHTML='';
+
+  // Range header
+  const a=jdToDate(curWeekJD),b=jdToDate(curWeekJD+6);
+  const aLun=solar2lunar(a.d,a.m,a.y),bLun=solar2lunar(b.d,b.m,b.y);
+  const rangeBar=document.createElement('div');
+  rangeBar.className='week-range-bar';
+  rangeBar.innerHTML=
+    `<div>Tuần · <span>${aLun.ld===bLun.ld?`${aLun.ld}`:`${aLun.ld}–${bLun.ld}`} Âm</span></div>`+
+    `<div>${a.d}/${a.m} — ${b.d}/${b.m}</div>`;
+  list.appendChild(rangeBar);
+
+  for(let i=0;i<7;i++){
+    const jd=curWeekJD+i;
+    const {d,m,y}=jdToDate(jd);
+    const dow=i;  // 0=CN ... 6=T7
+    const lunar=solar2lunar(d,m,y);
+    const hd=isHoangDao(d,m,y);
+    const ccN=canChiNgay(d,m,y);
+    const ccY=canChiNam(lunar.ly);
+    const holidays=getLe(d,m,y);
+    const userEvs=getEvents(d,m,y);
+    const isToday=d===todayD&&m===todayM&&y===todayY;
+    const otherMonth=m!==curM;
+
+    const lunarDay=NGAY[lunar.ld]||lunar.ld;
+    const lunarMonthLabel=lunar.lm===1?'Giêng':THANG[lunar.lm];
+
+    // Event HTML — max 2 then "+N khác"
+    let eventsHTML='';
+    if(userEvs.length){
+      const shown=userEvs.slice(0,2);
+      eventsHTML=shown.map(ev=>{
+        const timeSlot=ev.time
+          ?`<span class="wr-ev-time">${ev.time}</span>`
+          :`<span class="wr-ev-allday">cả ngày</span>`;
+        const name=ev.name||'(không tên)';
+        const repeat=ev.fromRule?'<span class="wr-ev-repeat" title="Lặp lại">🔁</span>':'';
+        return `<div class="wr-ev">${timeSlot}<span class="wr-ev-name">${escapeHtmlText(name)}${repeat}</span></div>`;
+      }).join('');
+      if(userEvs.length>2){
+        eventsHTML+=`<div class="wr-ev-more">+${userEvs.length-2} sự kiện khác</div>`;
+      }
+    }else if(!holidays.length){
+      eventsHTML=`<div class="wr-empty">— không có sự kiện —</div>`;
+    }
+
+    let holidayHTML='';
+    if(settings.showLE&&holidays.length){
+      holidayHTML=`<div class="wr-holiday">${escapeHtmlText(holidays[0].name)}${holidays.length>1?` · +${holidays.length-1}`:''}</div>`;
+    }
+
+    const chipsHTML=
+      (settings.showHD?`<span class="wr-chip ${hd?'hd':'hac'}">${hd?'H.Đ.':'Hắc'}</span>`:'')+
+      (settings.showCC?`<span class="wr-chip cc">${ccN}</span>`:'');
+
+    const row=document.createElement('div');
+    row.className='week-row'+
+      (dow===0?' sun':'')+
+      (dow===6?' sat':'')+
+      (isToday?' today':'')+
+      (otherMonth?' other-month':'');
+    row.style.animationDelay=(i*55)+'ms';
+    row.innerHTML=
+      `<div class="wr-left">`+
+        `<div class="wr-daynum">${d}</div>`+
+        `<div class="wr-dow">${DOW[dow]}</div>`+
+        `<div class="wr-monthyear">Th.${m}${otherMonth?' · '+y:''}</div>`+
+      `</div>`+
+      `<div class="wr-lunar"><strong>${lunarDay}</strong> Th.${lunarMonthLabel}${lunar.leap?' Nhuận':''} · ${ccY}</div>`+
+      (chipsHTML?`<div class="wr-chips">${chipsHTML}</div>`:'')+
+      holidayHTML+
+      (eventsHTML?`<div class="wr-events">${eventsHTML}</div>`:'');
+    row.onclick=()=>openDaySheet(d,m,y);
+    list.appendChild(row);
+  }
+}
+
+// Minimal escape helper for week-row event names
+function escapeHtmlText(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderMonth(){
+  updateTopStrips();
   const grid=document.getElementById('calGrid');
   grid.innerHTML='';
   const fd=new Date(curY,curM-1,1).getDay();
   const dim=new Date(curY,curM,0).getDate();
   const dprev=new Date(curY,curM-1,0).getDate();
   const total=Math.ceil((fd+dim)/7)*7;
-
-  // Header strip
-  const mid=solar2lunar(15,curM,curY);
-  const namCC=canChiNam(mid.ly);
-  document.getElementById('monthYearDisplay').textContent=`Tháng ${curM} / ${curY}`;
-  document.getElementById('lunarStripText').innerHTML=
-    `T.${THANG[mid.lm]}${mid.leap?' Nhuận':''} âm – <strong>${namCC}</strong>`;
-
-  // Today bar
-  const tLunar=solar2lunar(todayD,todayM,todayY);
-  const tCC=canChiNam(tLunar.ly);
-  document.getElementById('todayDateText').textContent=
-    `${DOW[now.getDay()]}, ${todayD}/${todayM}/${todayY}`;
-  document.getElementById('todayLunarText').textContent=
-    `${NGAY[tLunar.ld]||tLunar.ld} ${tLunar.lm===1?'Tháng Giêng':'Tháng '+THANG[tLunar.lm]}${tLunar.leap?' Nhuận':''} – ${tCC}`;
 
   for(let i=0;i<total;i++){
     let d,m,y,other=false;
@@ -1186,8 +2333,19 @@ function render(){
     let eventHTML='';
     if(settings.showLE&&holidays.length)
       eventHTML+=`<div class="event-label">${holidays[0].name}</div>`;
-    if(userEvs.length)
-      eventHTML+=`<div class="event-dot-row">${userEvs.slice(0,3).map(()=>'<div class="event-dot"></div>').join('')}</div>`;
+    if(userEvs.length){
+      const maxShown=holidays.length?1:2;
+      const shown=userEvs.slice(0,maxShown);
+      eventHTML+=shown.map(ev=>{
+        const timeHTML=ev.time?`<span class="event-chip-time">${ev.time}</span>`:'';
+        const repeat=ev.fromRule?'<span class="event-chip-repeat">🔁</span>':'';
+        const nameEscaped=String(ev.name||'').replace(/</g,'&lt;');
+        return `<div class="event-chip">${timeHTML}<span class="event-chip-name">${nameEscaped}</span>${repeat}</div>`;
+      }).join('');
+      if(userEvs.length>maxShown){
+        eventHTML+=`<div class="event-chip more">+${userEvs.length-maxShown} khác</div>`;
+      }
+    }
 
     // Thứ Hai: thêm icon danh ngôn nhỏ
     const mondayBadge = (!other && dow===1)
@@ -1219,7 +2377,7 @@ function openSheet(id){
 }
 function closeAllSheets(full=true){
   if(full)document.getElementById('overlay').classList.remove('open');
-  ['daySheet','searchSheet','pickerSheet','settingsSheet','importSheet','gcalSheet'].forEach(s=>
+  ['daySheet','searchSheet','pickerSheet','settingsSheet','importSheet'].forEach(s=>
     document.getElementById(s).classList.remove('open'));
 }
 
@@ -1352,14 +2510,24 @@ function openDaySheet(d,m,y){
     <div class="day-events-list">
       <h4>Sự kiện (${allEvs.length})</h4>
       ${holidays.map(e=>`<div class="event-item holiday"><span class="event-name">${e.name}</span></div>`).join('')}
-      ${userEvs.map(e=>`<div class="event-item">
+      ${userEvs.map(e=>{
+        const repeatBadge=e.fromRule?`<span class="event-repeat-badge" title="Lặp lại">🔁 ${
+          e.freq==='YEARLY_LUNAR'?'Hàng năm (âm)':
+          e.freq==='YEARLY_SOLAR'?'Hàng năm (dương)':
+          'Hàng tuần'
+        }</span>`:'';
+        const delHandler=e.fromRule
+          ? `promptDeleteRecurring(${d},${m},${y},${e.ruleId})`
+          : `delEventUI(${d},${m},${y},${e.id})`;
+        return `<div class="event-item">
         <div style="flex:1">
-          <div class="event-name">${e.name}</div>
+          <div class="event-name">${e.name}${repeatBadge}</div>
           ${e.time?`<div class="event-time">⏰ ${e.time}</div>`:''}
           ${e.note?`<div class="event-time">📝 ${e.note}</div>`:''}
         </div>
-        <button class="event-del" onclick="delEventUI(${d},${m},${y},${e.id})">🗑</button>
-      </div>`).join('')}
+        <button class="event-del" onclick="${delHandler}">🗑</button>
+      </div>`;
+      }).join('')}
     </div>`:'';
 
   document.getElementById('daySheetBody').innerHTML=`
@@ -1392,10 +2560,44 @@ function openDaySheet(d,m,y){
         <input class="form-input" id="evTime" placeholder="Giờ (vd: 09:00)" type="time">
         <input class="form-input" id="evNote" placeholder="Ghi chú">
       </div>
+      <label class="form-label">🔁 Lặp lại</label>
+      <div class="form-row">
+        <select class="form-input" id="evRepeat" onchange="onRepeatChange()">
+          <option value="none">Không lặp</option>
+          <option value="WEEKLY">Hàng tuần</option>
+          <option value="YEARLY_SOLAR">Hàng năm (dương lịch) — sinh nhật, kỷ niệm</option>
+          <option value="YEARLY_LUNAR">Hàng năm (âm lịch) — giỗ, Tết, rằm</option>
+        </select>
+        <input class="form-input" id="evCount" type="number" min="1" max="200" placeholder="Số lần" style="display:none" value="52">
+      </div>
+      <div id="repeatHint" class="form-hint" style="display:none"></div>
       <button class="form-submit" onclick="submitEvent(${d},${m},${y})">Lưu sự kiện</button>
     </div>
   `;
   openSheet('daySheet');
+}
+
+function onRepeatChange(){
+  const sel=document.getElementById('evRepeat');
+  const countEl=document.getElementById('evCount');
+  const hint=document.getElementById('repeatHint');
+  if(!sel)return;
+  if(sel.value==='none'){
+    countEl.style.display='none';
+    hint.style.display='none';
+  }else{
+    countEl.style.display='';
+    // Default counts: weekly=52 (~1 năm), yearly=10 (~1 thập kỷ)
+    countEl.value=sel.value==='WEEKLY'?'52':'10';
+    hint.style.display='';
+    if(sel.value==='WEEKLY'){
+      hint.textContent='Lặp lại vào thứ giống ngày gốc, đủ số lần trên rồi dừng.';
+    }else if(sel.value==='YEARLY_SOLAR'){
+      hint.textContent='Lặp lại cùng ngày/tháng dương lịch mỗi năm. Sinh nhật 29/2 sẽ tự fallback sang 28/2 ở năm không nhuận.';
+    }else{
+      hint.textContent='Lặp lại cùng ngày/tháng âm lịch mỗi năm. Nếu năm âm có nhuận, lấy tháng thường (trừ khi ngày gốc là tháng nhuận).';
+    }
+  }
 }
 
 function delEventUI(d,m,y,id){
@@ -1404,13 +2606,63 @@ function delEventUI(d,m,y,id){
   render();
 }
 
+function promptDeleteRecurring(d,m,y,ruleId){
+  const rule=recurringRules.find(r=>r.id===ruleId);
+  if(!rule){toast('Không tìm thấy chuỗi lặp');return}
+  const choice=prompt(
+    `"${rule.name}" là sự kiện lặp.\n\n`+
+    `Gõ số để chọn:\n`+
+    `  1 = Chỉ xoá ngày ${d}/${m}/${y}\n`+
+    `  2 = Xoá cả chuỗi lặp\n`+
+    `  (để trống = huỷ)`,
+    '1'
+  );
+  if(choice==='1'){
+    deleteOccurrence(ruleId,dayKey(d,m,y));
+    openDaySheet(d,m,y);render();
+    toast('Đã xoá ngày này khỏi chuỗi');
+  }else if(choice==='2'){
+    deleteSeries(ruleId);
+    openDaySheet(d,m,y);render();
+    toast('Đã xoá cả chuỗi lặp');
+  }
+}
+
 function submitEvent(d,m,y){
   const name=document.getElementById('evName').value.trim();
   if(!name){toast('Vui lòng nhập tên sự kiện');return}
-  addEvent(d,m,y,{name,time:document.getElementById('evTime').value,note:document.getElementById('evNote').value.trim()});
+  const time=document.getElementById('evTime').value;
+  const note=document.getElementById('evNote').value.trim();
+  const repeat=document.getElementById('evRepeat').value;
+  if(repeat==='none'){
+    addEvent(d,m,y,{name,time,note});
+    toast('Đã lưu sự kiện ✓');
+  }else{
+    const countRaw=parseInt(document.getElementById('evCount').value,10);
+    const count=(isNaN(countRaw)||countRaw<1)?52:Math.min(countRaw,200);
+    const anchorDate=dayKey(d,m,y);
+    const rule={
+      name,time,note,
+      uid:'rule-'+Date.now(),
+      rrule:{
+        freq:repeat,
+        interval:1,
+        count,
+        anchorDate,
+        anchorLunar: repeat==='YEARLY_LUNAR' ? solar2lunar(d,m,y) : null,
+      },
+      exdates:[],
+      overrides:{},
+    };
+    addRecurringRule(rule);
+    toast(
+      repeat==='YEARLY_LUNAR'?'Đã lưu chuỗi lặp năm âm ✓':
+      repeat==='YEARLY_SOLAR'?'Đã lưu chuỗi lặp năm dương ✓':
+      'Đã lưu chuỗi lặp tuần ✓'
+    );
+  }
   render();
   openDaySheet(d,m,y);
-  toast('Đã lưu sự kiện ✓');
 }
 
 // Search
@@ -1456,7 +2708,13 @@ function doSearch(){
 }
 
 function goToDate(d,m,y){
-  curM=m;curY=y;render();closeAllSheets();
+  curM=m;curY=y;
+  if(settings.viewMode==='week'){
+    const jd=jdFromDate(d,m,y);
+    const dow=new Date(y,m-1,d).getDay();
+    curWeekJD=jd-dow;
+  }
+  render();closeAllSheets();
   setTimeout(()=>{
     const cells=document.querySelectorAll('.day:not(.other)');
     cells.forEach(c=>{if(c.querySelector('.solar')?.textContent==d)c.scrollIntoView({behavior:'smooth',block:'center'})});
@@ -1473,7 +2731,15 @@ function renderPicker(){
     'Tháng 7','Tháng 8','Tháng 9','Tháng 10','Tháng 11','Tháng 12']
     .map((n,i)=>`<button class="mpicker-btn${i+1===pickerMonth?' active':''}" onclick="pickerMonth=${i+1};renderPicker()">${n}</button>`).join('');
 }
-function applyPicker(){curM=pickerMonth;curY=pickerYear;render();closeAllSheets()}
+function applyPicker(){
+  curM=pickerMonth;curY=pickerYear;
+  if(settings.viewMode==='week'){
+    const midJD=jdFromDate(15,curM,curY);
+    const midDow=new Date(curY,curM-1,15).getDay();
+    curWeekJD=midJD-midDow;
+  }
+  render();closeAllSheets();
+}
 
 // Settings
 function openSettings(){applySettingsUI();openSheet('settingsSheet')}
@@ -1813,7 +3079,7 @@ function confirmImport() {
       time:     ev.timeStr,
       note:     [ev.desc, ev.location ? '📍 ' + ev.location : ''].filter(Boolean).join(' | '),
       uid:      ev.uid,
-      gcal:     true,   // đánh dấu nguồn gốc Google Calendar
+      gcal:     true,   // flag "đã import từ ICS" — dùng cho dedup lần import sau
       recurring: ev.recurring || false
     });
     imported++;
@@ -1836,412 +3102,23 @@ function toast(msg){
   toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
 }
 
-document.getElementById('btnPrev').onclick=()=>{curM--;if(curM<1){curM=12;curY--}render()};
-document.getElementById('btnNext').onclick=()=>{curM++;if(curM>12){curM=1;curY++}render()};
+document.getElementById('btnPrev').onclick=()=>navigate(-1);
+document.getElementById('btnNext').onclick=()=>navigate(1);
 
 // Swipe navigation
 let swipeX=0;
 document.querySelector('.scroll-area').addEventListener('touchstart',e=>{swipeX=e.touches[0].clientX},{passive:true});
 document.querySelector('.scroll-area').addEventListener('touchend',e=>{
   const dx=e.changedTouches[0].clientX-swipeX;
-  if(Math.abs(dx)>60){
-    if(dx<0){curM++;if(curM>12){curM=1;curY++}}
-    else{curM--;if(curM<1){curM=12;curY--}}
-    render();
-  }
+  if(Math.abs(dx)>60)navigate(dx<0?1:-1);
 },{passive:true});
 
 // Keyboard
 document.addEventListener('keydown',e=>{
-  if(e.key==='ArrowLeft'){curM--;if(curM<1){curM=12;curY--}render()}
-  if(e.key==='ArrowRight'){curM++;if(curM>12){curM=1;curY++}render()}
+  if(e.key==='ArrowLeft')navigate(-1);
+  if(e.key==='ArrowRight')navigate(1);
   if(e.key==='Escape')closeAllSheets();
 });
-
-// ═══════════════════════════════════════════════════
-// MODULE: GOOGLE CALENDAR SYNC
-// OAuth 2.0 PKCE flow — không cần backend
-// User tự cung cấp Client ID từ Google Cloud Console
-// ═══════════════════════════════════════════════════
-
-const GCAL_SCOPE     = 'https://www.googleapis.com/auth/calendar';
-const GCAL_STORE_KEY = 'lichviet_gcal_v1';
-
-// ── State ──
-let gcal = {
-  clientId:      '',
-  accessToken:   '',
-  tokenExpiry:   0,
-  selectedCalId: 'primary',
-  userInfo:      null,
-};
-
-function gcalLoad() {
-  try { Object.assign(gcal, JSON.parse(localStorage.getItem(GCAL_STORE_KEY) || '{}')); } catch {}
-}
-function gcalSave() {
-  localStorage.setItem(GCAL_STORE_KEY, JSON.stringify(gcal));
-}
-gcalLoad();
-
-// ── Setup sheet ──
-function openGcalSetup() {
-  closeAllSheets(false);
-  document.getElementById('overlay').classList.add('open');
-  document.getElementById('gcalSheet').classList.add('open');
-
-  // Set origin hint
-  document.getElementById('gcalOriginCode').textContent = location.origin;
-
-  if (gcal.clientId && gcal.accessToken && Date.now() < gcal.tokenExpiry) {
-    showGcalConnected();
-  } else if (gcal.clientId) {
-    document.getElementById('gcalClientIdInput').value = gcal.clientId;
-    showGcalStep(1);
-  } else {
-    showGcalStep(1);
-  }
-}
-
-function copyOrigin() {
-  navigator.clipboard?.writeText(location.origin)
-    .then(() => toast('Đã copy: ' + location.origin))
-    .catch(() => toast(location.origin));
-}
-
-function showGcalStep(n) {
-  ['gcalStep1','gcalStep2','gcalLoading'].forEach(id => {
-    document.getElementById(id).style.display = 'none';
-  });
-  if (n === 1) document.getElementById('gcalStep1').style.display = '';
-  if (n === 2) document.getElementById('gcalStep2').style.display = '';
-  if (n === 'loading') document.getElementById('gcalLoading').style.display = '';
-}
-
-function setGcalLoading(text) {
-  showGcalStep('loading');
-  document.getElementById('gcalLoadingText').textContent = text;
-}
-
-// ── Lưu Client ID & bắt đầu OAuth ──
-function gcalSaveClientId() {
-  const id = document.getElementById('gcalClientIdInput').value.trim();
-  if (!id || !id.includes('.apps.googleusercontent.com')) {
-    toast('Client ID không hợp lệ');
-    return;
-  }
-  gcal.clientId = id;
-  gcalSave();
-  gcalStartAuth();
-}
-
-// ── OAuth 2.0 Implicit Flow (phù hợp SPA/PWA) ──
-function gcalStartAuth() {
-  const params = new URLSearchParams({
-    client_id:     gcal.clientId,
-    redirect_uri:  location.href.split('?')[0].split('#')[0],
-    response_type: 'token',
-    scope:         GCAL_SCOPE + ' https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/userinfo.email',
-    include_granted_scopes: 'true',
-    state: 'gcal_auth',
-  });
-  // Lưu trạng thái trước khi redirect
-  sessionStorage.setItem('gcal_pending', '1');
-  window.location.href = 'https://accounts.google.com/o/oauth2/v2/auth?' + params.toString();
-}
-
-// ── Xử lý callback (hash fragment từ Google) ──
-function gcalHandleCallback() {
-  const hash = window.location.hash.substring(1);
-  if (!hash) return;
-  const params = new URLSearchParams(hash);
-  const token  = params.get('access_token');
-  const state  = params.get('state');
-  const expiresIn = +params.get('expires_in') || 3600;
-
-  if (token && state === 'gcal_auth') {
-    gcal.accessToken = token;
-    gcal.tokenExpiry = Date.now() + (expiresIn - 60) * 1000;
-    gcalSave();
-    // Xóa hash khỏi URL
-    history.replaceState(null, '', location.pathname + location.search);
-    sessionStorage.removeItem('gcal_pending');
-    // Fetch user info rồi mở sheet
-    gcalFetchUserInfo().then(() => {
-      openGcalSetup();
-      updateGcalSettingsUI();
-    });
-  }
-}
-
-// ── Fetch user info ──
-async function gcalFetchUserInfo() {
-  try {
-    const res = await gcalFetch('https://www.googleapis.com/oauth2/v2/userinfo');
-    gcal.userInfo = res;
-    gcalSave();
-  } catch {}
-}
-
-// ── Hiển thị step 2 (đã kết nối) ──
-async function showGcalConnected() {
-  setGcalLoading('Đang tải thông tin...');
-  if (!gcal.userInfo) await gcalFetchUserInfo();
-
-  // User info
-  const u = gcal.userInfo || {};
-  document.getElementById('gcalUserName').textContent = u.name || 'Google User';
-  document.getElementById('gcalUserEmail').textContent = u.email || '';
-  if (u.picture) {
-    const av = document.getElementById('gcalUserAvatar');
-    av.innerHTML = `<img src="${u.picture}" style="width:100%;height:100%;border-radius:50%;object-fit:cover">`;
-  }
-
-  showGcalStep(2);
-
-  // Load calendar list
-  await gcalLoadCalendars();
-}
-
-// ── Tải danh sách lịch ──
-async function gcalLoadCalendars() {
-  const el = document.getElementById('gcalCalendarList');
-  el.innerHTML = '<div style="color:var(--text-muted);font-size:.8rem;text-align:center;padding:12px">Đang tải...</div>';
-  try {
-    const data = await gcalFetch('https://www.googleapis.com/calendar/v3/users/me/calendarList?maxResults=20');
-    const items = data.items || [];
-    if (!items.length) { el.innerHTML = '<div style="color:var(--text-muted);font-size:.8rem;text-align:center;padding:12px">Không tìm thấy lịch</div>'; return; }
-
-    el.innerHTML = items.map(cal => `
-      <div class="cal-item ${gcal.selectedCalId === cal.id ? 'selected' : ''}"
-           onclick="selectCalendar('${cal.id.replace(/'/g,"\\'")}', this)">
-        <div class="cal-color" style="background:${cal.backgroundColor || '#1565c0'}"></div>
-        <div class="cal-info">
-          <div class="cal-name">${escHtml(cal.summary)}</div>
-          <div class="cal-access">${cal.accessRole === 'owner' ? '👑 Chủ sở hữu' : cal.accessRole === 'writer' ? '✏️ Có thể chỉnh sửa' : '👁️ Chỉ xem'}</div>
-        </div>
-        ${gcal.selectedCalId === cal.id ? '<div class="cal-check">✓</div>' : ''}
-      </div>`).join('');
-  } catch(e) {
-    el.innerHTML = `<div style="color:var(--accent);font-size:.8rem;padding:10px">${escHtml(e.message)}</div>`;
-  }
-}
-
-function selectCalendar(id, el) {
-  gcal.selectedCalId = id;
-  gcalSave();
-  document.querySelectorAll('.cal-item').forEach(c => c.classList.remove('selected'));
-  el.classList.add('selected');
-  if (!el.querySelector('.cal-check')) el.insertAdjacentHTML('beforeend','<div class="cal-check">✓</div>');
-  document.querySelectorAll('.cal-item:not(.selected) .cal-check').forEach(c => c.remove());
-}
-
-// ── Pull: Google Calendar → Lịch Việt ──
-async function gcalPull() {
-  if (!gcalCheckToken()) return;
-  setGcalLoading('Đang tải sự kiện từ Google...');
-  try {
-    const now   = new Date();
-    const tMin  = new Date(now.getFullYear() - 1, 0, 1).toISOString();
-    const tMax  = new Date(now.getFullYear() + 2, 11, 31).toISOString();
-    const url   = `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(gcal.selectedCalId)}/events`
-                + `?timeMin=${tMin}&timeMax=${tMax}&singleEvents=true&maxResults=500&orderBy=startTime`;
-    const data  = await gcalFetch(url);
-    const items = data.items || [];
-
-    let imported = 0, skipped = 0;
-    items.forEach(ev => {
-      if (!ev.summary) return;
-      const start = ev.start?.date || ev.start?.dateTime;
-      if (!start) return;
-
-      // Parse date
-      const dt = start.length === 10
-        ? { y: +start.slice(0,4), m: +start.slice(5,7), d: +start.slice(8,10), allday: true, time: '' }
-        : parseGcalDatetime(start);
-
-      const uid = 'gcal-' + (ev.id || Date.now());
-      const k   = dayKey(dt.d, dt.m, dt.y);
-      const existing = events[k] || [];
-      if (existing.some(e => e.uid === uid || e.uid === ev.id)) { skipped++; return; }
-
-      addEvent(dt.d, dt.m, dt.y, {
-        name:  ev.summary,
-        time:  dt.time,
-        note:  [ev.description, ev.location ? '📍 ' + ev.location : ''].filter(Boolean).join(' | ').slice(0, 200),
-        uid,
-        gcal:  true,
-        gcalId: ev.id,
-      });
-      imported++;
-    });
-
-    render();
-    showGcalConnected();
-    gcalLog(`✅ Tải về: +${imported} mới, bỏ qua ${skipped} trùng`);
-    toast(`⬇️ Tải về ${imported} sự kiện`);
-  } catch(e) {
-    showGcalConnected();
-    gcalLog('❌ Lỗi: ' + e.message);
-    toast('Lỗi: ' + e.message);
-  }
-}
-
-function parseGcalDatetime(str) {
-  // ISO 8601: 2026-05-01T09:00:00+07:00 hoặc Z
-  const d = new Date(str);
-  const vn = new Date(d.getTime() + 7 * 3600000); // shift to UTC+7
-  return {
-    y: vn.getUTCFullYear(), m: vn.getUTCMonth() + 1, d: vn.getUTCDate(),
-    time: `${String(vn.getUTCHours()).padStart(2,'0')}:${String(vn.getUTCMinutes()).padStart(2,'0')}`,
-    allday: false,
-  };
-}
-
-// ── Push: Lịch Việt → Google Calendar ──
-async function gcalPush() {
-  if (!gcalCheckToken()) return;
-  const allUserEvs = Object.entries(events).flatMap(([k, arr]) => {
-    const [y,m,d] = k.split('-').map(Number);
-    return arr.filter(e => !e.gcal).map(e => ({ ...e, y, m, d }));
-  });
-
-  if (!allUserEvs.length) { toast('Không có sự kiện mới để đẩy lên'); return; }
-
-  setGcalLoading(`Đang đẩy ${allUserEvs.length} sự kiện...`);
-  let pushed = 0, failed = 0;
-
-  for (const ev of allUserEvs) {
-    try {
-      const start = ev.time
-        ? `${ev.y}-${String(ev.m).padStart(2,'0')}-${String(ev.d).padStart(2,'0')}T${ev.time}:00+07:00`
-        : `${ev.y}-${String(ev.m).padStart(2,'0')}-${String(ev.d).padStart(2,'0')}`;
-      const end = ev.time
-        ? `${ev.y}-${String(ev.m).padStart(2,'0')}-${String(ev.d).padStart(2,'0')}T${ev.time.slice(0,2) < '23' ? String(+ev.time.slice(0,2)+1).padStart(2,'0') : '23'}:${ev.time.slice(3)}:00+07:00`
-        : nextDay(ev.y, ev.m, ev.d);
-
-      const lunar = solar2lunar(ev.d, ev.m, ev.y);
-      const body = {
-        summary: ev.name,
-        description: `[Lịch Việt] ${ev.note || ''}\n🗓️ Âm lịch: ${lunar.ld}/${lunar.lm}/${lunar.ly}${lunar.leap?' (nhuận)':''}`.trim(),
-        start: ev.time ? { dateTime: start, timeZone: 'Asia/Ho_Chi_Minh' } : { date: start },
-        end:   ev.time ? { dateTime: end,   timeZone: 'Asia/Ho_Chi_Minh' } : { date: end },
-        source: { title: 'Lịch Việt PWA', url: location.origin },
-      };
-
-      const res = await gcalFetch(
-        `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(gcal.selectedCalId)}/events`,
-        { method: 'POST', body: JSON.stringify(body) }
-      );
-
-      // Đánh dấu đã push, lưu gcalId
-      const k = dayKey(ev.d, ev.m, ev.y);
-      const idx = (events[k] || []).findIndex(e => e.id === ev.id);
-      if (idx >= 0) { events[k][idx].gcal = true; events[k][idx].gcalId = res.id; }
-      pushed++;
-    } catch { failed++; }
-  }
-
-  saveEvents();
-  render();
-  showGcalConnected();
-  gcalLog(`✅ Đẩy lên: ${pushed} thành công${failed ? ', ' + failed + ' lỗi' : ''}`);
-  toast(`⬆️ Đẩy lên ${pushed} sự kiện`);
-}
-
-function nextDay(y, m, d) {
-  const dt = new Date(y, m-1, d+1);
-  return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`;
-}
-
-// ── Ngắt kết nối ──
-function gcalDisconnect() {
-  if (!confirm('Ngắt kết nối Google Calendar?')) return;
-  gcal.accessToken = '';
-  gcal.tokenExpiry = 0;
-  gcal.userInfo    = null;
-  gcalSave();
-  closeAllSheets();
-  updateGcalSettingsUI();
-  toast('Đã ngắt kết nối');
-}
-
-// ── Helper: fetch với auth token ──
-async function gcalFetch(url, opts = {}) {
-  if (!gcal.accessToken) throw new Error('Chưa đăng nhập');
-  const res = await fetch(url, {
-    ...opts,
-    headers: {
-      'Authorization': 'Bearer ' + gcal.accessToken,
-      'Content-Type': 'application/json',
-      ...(opts.headers || {}),
-    },
-  });
-  if (!res.ok) {
-    if (res.status === 401) {
-      gcal.accessToken = '';
-      gcalSave();
-      updateGcalSettingsUI();
-      throw new Error('Token hết hạn — vui lòng đăng nhập lại');
-    }
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `HTTP ${res.status}`);
-  }
-  return res.json();
-}
-
-function gcalCheckToken() {
-  if (!gcal.accessToken || Date.now() >= gcal.tokenExpiry) {
-    toast('Phiên đăng nhập hết hạn — vui lòng kết nối lại');
-    openGcalSetup();
-    return false;
-  }
-  return true;
-}
-
-// ── Sync log ──
-function gcalLog(msg) {
-  const el = document.getElementById('gcalSyncLog');
-  if (!el) return;
-  el.style.display = '';
-  el.innerHTML += `<div>${new Date().toLocaleTimeString('vi-VN')} — ${msg}</div>`;
-  el.scrollTop = el.scrollHeight;
-}
-
-// ── Cập nhật Settings UI ──
-function updateGcalSettingsUI() {
-  const connected = gcal.accessToken && Date.now() < gcal.tokenExpiry;
-  const label  = document.getElementById('gcalStatusLabel');
-  const sub    = document.getElementById('gcalStatusSub');
-  const dot    = document.getElementById('gcalStatusDot');
-  const btn    = document.getElementById('gcalConnectBtn');
-  const acts   = document.getElementById('gcalSyncActions');
-
-  if (connected) {
-    label.textContent = gcal.userInfo?.email || 'Đã kết nối';
-    sub.textContent   = 'Google Calendar';
-    dot.style.background = '#2e7d32';
-    btn.textContent   = '✏️ Quản lý kết nối';
-    acts.style.display = '';
-  } else {
-    label.textContent = gcal.clientId ? 'Token hết hạn' : 'Chưa kết nối';
-    sub.textContent   = 'Kết nối để sync 2 chiều';
-    dot.style.background = 'var(--text-muted)';
-    btn.textContent   = '🔗 Kết nối Google Calendar';
-    acts.style.display = 'none';
-  }
-}
-
-function escHtml(s) {
-  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// ── Xử lý OAuth callback khi app load ──
-if (window.location.hash.includes('access_token')) {
-  gcalHandleCallback();
-}
-
-// ── Thêm gcalSheet vào danh sách sheet ──
 
 // ═══════════════════════════════════════════════════
 // MODULE 10: SERVICE WORKER (PWA offline)
@@ -2249,20 +3126,69 @@ if (window.location.hash.includes('access_token')) {
 if('serviceWorker' in navigator){
   const swCode=`
 const CACHE='lichviet-v1';
-self.addEventListener('install',e=>e.waitUntil(
+self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(
   caches.open(CACHE).then(c=>c.addAll(['./']))
-));
+)});
+self.addEventListener('activate',e=>e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch',e=>e.respondWith(
   caches.match(e.request).then(r=>r||fetch(e.request))
-));`;
+));
+// Notification click: focus or open the app
+self.addEventListener('notificationclick',e=>{
+  const action=e.action;
+  const data=e.notification.data||{};
+  e.notification.close();
+  if(action==='dismiss')return;
+  if(action==='snooze'){
+    // Re-show sau 10 phút
+    e.waitUntil(new Promise(resolve=>{
+      setTimeout(()=>{
+        self.registration.showNotification(e.notification.title+' (báo lại)',{
+          body:e.notification.body,tag:'snooze-'+Date.now(),data
+        });
+        resolve();
+      },600000);
+    }));
+    return;
+  }
+  // Default: focus app
+  e.waitUntil((async()=>{
+    const clients=await self.clients.matchAll({type:'window',includeUncontrolled:true});
+    for(const c of clients){if(c.url.includes(self.location.origin)&&'focus' in c){
+      c.postMessage({type:'notif-click',data});
+      return c.focus();
+    }}
+    if(self.clients.openWindow)return self.clients.openWindow('./');
+  })());
+});`;
   const swBlob=new Blob([swCode],{type:'application/javascript'});
   const swUrl=URL.createObjectURL(swBlob);
   navigator.serviceWorker.register(swUrl).catch(()=>{});
+
+  // Listen for SW messages (e.g. notification clicks)
+  navigator.serviceWorker.addEventListener('message',e=>{
+    if(e.data&&e.data.type==='notif-click'){
+      const {dateKey,eventId}=e.data.data||{};
+      if(dateKey){
+        const [y,m,d]=dateKey.split('-').map(Number);
+        if(d&&m&&y)goToDate(d,m,y);
+      }
+    }
+  });
 }
 
 // ── INIT ──
-render();
-updateGcalSettingsUI();
+setViewMode(settings.viewMode);
+
+// Notifications: chạy ngay khi app mở (nếu đã enable + permission granted)
+if(settings.notifEnabled&&notifSupported()&&Notification.permission==='granted'){
+  // Đợi SW ready trước khi schedule/catch-up
+  navigator.serviceWorker.ready.then(()=>{
+    catchupMissedNotifs();
+    checkUpcomingOnOpen();
+    scheduleAllInSessionNotifs();
+  }).catch(()=>{});
+}
 </script>
 </body>
 </html>
