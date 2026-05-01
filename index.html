@@ -191,9 +191,12 @@ body{
   width:32px;height:32px;
   border-radius:8px;
   display:flex;align-items:center;justify-content:center;
-  transition:all .15s;
+  transition:background .18s ease, color .18s ease, transform .18s ease;
 }
-.icon-btn:active{background:rgba(255,255,255,.2);color:#ffca28}
+@media(hover:hover){
+  .icon-btn:hover{background:rgba(255,255,255,.14);color:#ffca28;transform:scale(1.08)}
+}
+.icon-btn:active{background:rgba(255,255,255,.24);color:#ffca28;transform:scale(.92);transition-duration:.08s}
 
 /* ── VIEW MODE TOGGLE ── */
 .view-toggle{
@@ -216,15 +219,21 @@ body{
   padding:5px 7px;
   border-radius:7px;
   cursor:pointer;
-  transition:all .18s ease;
+  transition:background .28s cubic-bezier(.22,.9,.28,1), color .2s ease, transform .2s ease, box-shadow .28s ease;
   white-space:nowrap;
 }
 .view-toggle .vt-btn.active{
   background:#ffffff;
   color:var(--primary);
-  box-shadow:0 1px 3px rgba(0,0,0,.12);
+  box-shadow:0 1px 3px rgba(0,0,0,.12), 0 0 0 0 rgba(255,255,255,.0);
+  animation:tabActivate .32s cubic-bezier(.22,.9,.28,1);
 }
-.view-toggle .vt-btn:not(.active):active{color:#fff;background:rgba(255,255,255,.1)}
+@keyframes tabActivate{
+  0%{transform:scale(.92)}
+  60%{transform:scale(1.04)}
+  100%{transform:scale(1)}
+}
+.view-toggle .vt-btn:not(.active):active{color:#fff;background:rgba(255,255,255,.1);transform:scale(.94)}
 
 /* ── LUNAR STRIP ── */
 .lunar-strip{
@@ -277,6 +286,7 @@ body{
   gap:1px;
   background:var(--border);
   box-shadow:var(--shadow-sm);
+  animation:gridFade .24s cubic-bezier(.22,.9,.28,1);
 }
 .day{
   background:var(--surface);
@@ -284,12 +294,16 @@ body{
   min-height:80px;
   cursor:pointer;
   position:relative;
-  transition:background .1s;
+  transition:background .15s ease, transform .12s ease, box-shadow .15s ease;
   display:flex;
   flex-direction:column;
   gap:2px;
+  z-index:1;
 }
-.day:active{background:var(--surface3)}
+@media(hover:hover){
+  .day:hover{background:var(--surface2);transform:scale(1.04);z-index:2;box-shadow:0 4px 14px rgba(21,101,192,.14)}
+}
+.day:active{background:var(--surface3);transform:scale(.97);transition-duration:.08s}
 .day.other{background:#f8fbff;opacity:.6}
 .day.today{background:var(--gold-pale)}
 .day.today::after{
@@ -297,6 +311,11 @@ body{
   border:2px solid var(--today-ring);
   border-radius:2px;pointer-events:none;
   box-shadow:inset 0 0 0 1px rgba(249,168,37,.2);
+  animation:todayPulse 2.8s ease-in-out infinite;
+}
+@keyframes todayPulse{
+  0%,100%{box-shadow:inset 0 0 0 1px rgba(249,168,37,.2),0 0 0 0 rgba(249,168,37,.0)}
+  50%{box-shadow:inset 0 0 0 1px rgba(249,168,37,.3),0 0 0 4px rgba(249,168,37,.15)}
 }
 .day.has-event{
   background:var(--surface2);
@@ -383,6 +402,10 @@ body{
 }
 .week-list.active{display:flex}
 .cal-grid.hidden{display:none}
+@keyframes gridFade{
+  from{opacity:.35;transform:translateY(2px)}
+  to{opacity:1;transform:translateY(0)}
+}
 .weekdays.hidden{display:none}
 
 .week-row{
@@ -818,12 +841,12 @@ body{
 .sheet-overlay{
   position:fixed;inset:0;
   background:rgba(26,35,126,.35);
-  backdrop-filter:blur(3px);
+  backdrop-filter:blur(0);
   z-index:200;
   opacity:0;pointer-events:none;
-  transition:opacity .25s;
+  transition:opacity .32s ease, backdrop-filter .32s ease;
 }
-.sheet-overlay.open{opacity:1;pointer-events:all}
+.sheet-overlay.open{opacity:1;pointer-events:all;backdrop-filter:blur(4px)}
 .sheet{
   position:fixed;bottom:0;left:0;right:0;
   background:var(--surface);
@@ -833,10 +856,11 @@ body{
   z-index:201;
   padding:0 0 calc(var(--safe-bot) + 8px);
   transform:translateY(100%);
-  transition:transform .3s cubic-bezier(.32,.72,0,1);
+  transition:transform .38s cubic-bezier(.22,.9,.28,1);
   max-height:92vh;
   display:flex;
   flex-direction:column;
+  will-change:transform;
 }
 .sheet.open{transform:translateY(0)}
 .sheet-handle{
@@ -1130,17 +1154,38 @@ body{
 /* ── TOAST ── */
 .toast{
   position:fixed;top:calc(var(--safe-top) + 70px);left:50%;
-  transform:translateX(-50%) translateY(-10px);
+  transform:translateX(-50%) translateY(-18px) scale(.96);
   background:var(--primary);color:#ffffff;
   box-shadow:var(--shadow-md);
   padding:8px 18px;border-radius:20px;
   font-size:.82rem;font-weight:700;
   z-index:500;
   opacity:0;pointer-events:none;
-  transition:all .25s;
+  transition:opacity .28s ease, transform .38s cubic-bezier(.22,.9,.28,1);
   white-space:nowrap;
 }
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}
+.toast .spinner{
+  display:inline-block;width:12px;height:12px;
+  border:2px solid rgba(255,255,255,.35);
+  border-top-color:#ffca28;
+  border-radius:50%;
+  vertical-align:-2px;margin-right:6px;
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── ACCESSIBILITY: respect reduced motion ── */
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{
+    animation-duration:.01ms !important;
+    animation-iteration-count:1 !important;
+    transition-duration:.01ms !important;
+    scroll-behavior:auto !important;
+  }
+  .day.today::after{animation:none}
+  .toast .spinner{animation:spin 1.2s linear infinite !important}
+}
 
 /* ═══════════════════════════════════════════════════
    RESPONSIVE BREAKPOINTS — Material Design 3 compliance
@@ -1849,21 +1894,31 @@ function applyNotifSettingsUI(){
   document.getElementById('togNotifSnooze').classList.toggle('on',!!settings.notifSnooze);
 }
 
+let notifToggleBusy=false;
 async function toggleNotifEnabled(){
-  if(!settings.notifEnabled){
-    const ok=await requestNotifPermission();
-    if(!ok){applyNotifSettingsUI();return}
-    settings.notifEnabled=true;saveSettings();
-    applyNotifSettingsUI();
-    checkUpcomingOnOpen();
-    scheduleAllInSessionNotifs();
-    toast('Đã bật thông báo ✓');
-  }else{
-    settings.notifEnabled=false;saveSettings();
-    applyNotifSettingsUI();
-    for(const h of notifTimers.values())clearTimeout(h);
-    notifTimers.clear();
-    toast('Đã tắt thông báo');
+  if(notifToggleBusy)return;
+  notifToggleBusy=true;
+  const tog=document.getElementById('togNotifEnabled');
+  tog.style.opacity='0.6';tog.style.pointerEvents='none';
+  try{
+    if(!settings.notifEnabled){
+      const ok=await requestNotifPermission();
+      if(!ok){applyNotifSettingsUI();return}
+      settings.notifEnabled=true;saveSettings();
+      applyNotifSettingsUI();
+      checkUpcomingOnOpen();
+      scheduleAllInSessionNotifs();
+      toast('Đã bật thông báo ✓');
+    }else{
+      settings.notifEnabled=false;saveSettings();
+      applyNotifSettingsUI();
+      for(const h of notifTimers.values())clearTimeout(h);
+      notifTimers.clear();
+      toast('Đã tắt thông báo');
+    }
+  }finally{
+    notifToggleBusy=false;
+    tog.style.opacity='';tog.style.pointerEvents='';
   }
 }
 
@@ -1907,13 +1962,20 @@ function notifSupported(){
 
 async function requestNotifPermission(){
   if(!notifSupported()){toast('Trình duyệt không hỗ trợ thông báo');return false}
+  if(location.protocol==='file:'){
+    toast('Thông báo cần HTTPS — mở bản online thay vì file cục bộ');
+    return false;
+  }
   if(Notification.permission==='granted')return true;
   if(Notification.permission==='denied'){
     toast('Bạn đã chặn thông báo — vào cài đặt trình duyệt để bật lại');
     return false;
   }
   const result=await Notification.requestPermission();
-  return result==='granted';
+  if(result==='granted')return true;
+  if(result==='denied')toast('Thông báo đã bị chặn');
+  else toast('Bạn chưa cấp quyền thông báo');
+  return false;
 }
 
 async function showNotif(title,body,tag,data){
@@ -2300,6 +2362,8 @@ function escapeHtmlText(s){
 function renderMonth(){
   updateTopStrips();
   const grid=document.getElementById('calGrid');
+  // Re-trigger fade-in animation on each render (month navigation, view toggle)
+  grid.style.animation='none';void grid.offsetWidth;grid.style.animation='';
   grid.innerHTML='';
   const fd=new Date(curY,curM-1,1).getDay();
   const dim=new Date(curY,curM,0).getDate();
@@ -2860,17 +2924,24 @@ function handleFileDrop(e) {
 }
 
 function readICSFile(file) {
+  toastLoading('Đang đọc file…');
   const reader = new FileReader();
   reader.onload = e => {
-    try {
-      const parsed = parseICS(e.target.result);
-      if (!parsed.length) { toast('Không tìm thấy sự kiện nào trong file'); return; }
-      importParsed = parsed;
-      showImportPreview(parsed, file.name);
-    } catch(err) {
-      toast('Lỗi đọc file: ' + err.message);
-    }
+    // Defer parse to next frame so spinner actually paints before we block the main thread
+    requestAnimationFrame(() => {
+      try {
+        const parsed = parseICS(e.target.result);
+        toastHide();
+        if (!parsed.length) { toast('Không tìm thấy sự kiện nào trong file'); return; }
+        importParsed = parsed;
+        showImportPreview(parsed, file.name);
+      } catch(err) {
+        toastHide();
+        toast('Lỗi đọc file: ' + err.message);
+      }
+    });
   };
+  reader.onerror = () => { toastHide(); toast('Không đọc được file'); };
   reader.readAsText(file, 'UTF-8');
 }
 
@@ -3120,6 +3191,20 @@ function toast(msg){
   el.textContent=msg;el.classList.add('show');
   clearTimeout(toastTimer);
   toastTimer=setTimeout(()=>el.classList.remove('show'),2200);
+}
+function toastLoading(msg){
+  const el=document.getElementById('toast');
+  el.textContent='';
+  const spinner=document.createElement('span');spinner.className='spinner';
+  const text=document.createTextNode(msg);
+  el.append(spinner,text);
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+}
+function toastHide(){
+  const el=document.getElementById('toast');
+  el.classList.remove('show');
+  clearTimeout(toastTimer);
 }
 
 document.getElementById('btnPrev').onclick=()=>navigate(-1);
