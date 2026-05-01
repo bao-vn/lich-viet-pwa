@@ -2745,12 +2745,29 @@ function applyPicker(){
 function openSettings(){applySettingsUI();openSheet('settingsSheet')}
 
 // ═══════════════════════════════════════════════════
-// MODULE 8: EXPORT ICS
+// MODULE 8: EXPORT ICS (RFC 5545 compliant)
 // ═══════════════════════════════════════════════════
 function exportICS(){
+  const enc=new TextEncoder(),byteLen=s=>enc.encode(s).length;
+  const esc=s=>String(s==null?'':s)
+    .replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\r?\n/g,'\\n');
+  const fold=line=>{
+    if(byteLen(line)<=75)return line;
+    const out=[];let chunk='',first=true;
+    for(const ch of line){
+      const chB=byteLen(ch),cB=byteLen(chunk),lim=first?75:74;
+      if(cB+chB>lim){out.push(chunk);chunk=ch;first=false}else chunk+=ch;
+    }
+    if(chunk)out.push(chunk);
+    return out.join('\r\n ');
+  };
+  const p=n=>String(n).padStart(2,'0');
+  const now=new Date();
+  const dtstamp=`${now.getUTCFullYear()}${p(now.getUTCMonth()+1)}${p(now.getUTCDate())}T${p(now.getUTCHours())}${p(now.getUTCMinutes())}${p(now.getUTCSeconds())}Z`;
+
   let lines=[
     'BEGIN:VCALENDAR','VERSION:2.0',
-    'PRODID:-//Lich Viet PWA//VI','CALSCALE:GREGORIAN',
+    'PRODID:-//Lich Viet PWA//VI','CALSCALE:GREGORIAN','METHOD:PUBLISH',
     'X-WR-CALNAME:Âm Lịch Việt Nam','X-WR-TIMEZONE:Asia/Ho_Chi_Minh',
   ];
 
@@ -2760,15 +2777,17 @@ function exportICS(){
     const lunar=solar2lunar(d,m,y);
     const thang=`Tháng ${THANG[lunar.lm]}${lunar.leap?' Nhuận':''}`;
     evArr.forEach(ev=>{
-      const dt=`${y}${String(m).padStart(2,'0')}${String(d).padStart(2,'0')}`;
+      const dt=`${y}${p(m)}${p(d)}`;
       const dtNext=new Date(y,m-1,d+1);
-      const dn=`${dtNext.getFullYear()}${String(dtNext.getMonth()+1).padStart(2,'0')}${String(dtNext.getDate()).padStart(2,'0')}`;
+      const dn=`${dtNext.getFullYear()}${p(dtNext.getMonth()+1)}${p(dtNext.getDate())}`;
+      const desc=`🗓️ Âm lịch: ${lunar.ld}/${lunar.lm} (${thang})${ev.note?'\n'+ev.note:''}`;
       lines.push('BEGIN:VEVENT',
         `UID:lv-${ev.id}@lichviet`,
+        `DTSTAMP:${dtstamp}`,
         `DTSTART;VALUE=DATE:${dt}`,
         `DTEND;VALUE=DATE:${dn}`,
-        `SUMMARY:${ev.name.replace(/,/g,'\\,')}`,
-        `DESCRIPTION:🗓️ Âm lịch: ${lunar.ld}/${lunar.lm} (${thang})${ev.note?'\\n'+ev.note:''}`,
+        fold(`SUMMARY:${esc(ev.name)}`),
+        fold(`DESCRIPTION:${esc(desc)}`),
         'TRANSP:TRANSPARENT','END:VEVENT');
     });
   });
@@ -2780,14 +2799,15 @@ function exportICS(){
       for(let d=1;d<=dim;d++){
         const hols=getLe(d,m,y);
         hols.forEach(h=>{
-          const dt=`${y}${String(m).padStart(2,'0')}${String(d).padStart(2,'0')}`;
+          const dt=`${y}${p(m)}${p(d)}`;
           const dtNext=new Date(y,m-1,d+1);
-          const dn=`${dtNext.getFullYear()}${String(dtNext.getMonth()+1).padStart(2,'0')}${String(dtNext.getDate()).padStart(2,'0')}`;
+          const dn=`${dtNext.getFullYear()}${p(dtNext.getMonth()+1)}${p(dtNext.getDate())}`;
           lines.push('BEGIN:VEVENT',
             `UID:lv-hol-${y}${m}${d}${h.src}@lichviet`,
+            `DTSTAMP:${dtstamp}`,
             `DTSTART;VALUE=DATE:${dt}`,
             `DTEND;VALUE=DATE:${dn}`,
-            `SUMMARY:${h.name.replace(/,/g,'\\,')}`,
+            fold(`SUMMARY:${esc(h.name)}`),
             'TRANSP:TRANSPARENT','END:VEVENT');
         });
       }
@@ -2795,7 +2815,7 @@ function exportICS(){
   });
 
   lines.push('END:VCALENDAR');
-  const blob=new Blob([lines.join('\r\n')],{type:'text/calendar'});
+  const blob=new Blob([lines.join('\r\n')+'\r\n'],{type:'text/calendar;charset=utf-8'});
   const a=document.createElement('a');
   a.href=URL.createObjectURL(blob);
   a.download=`lich-viet-${curY}.ics`;
