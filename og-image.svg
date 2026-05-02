@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1565c0"/>
+      <stop offset="60%" stop-color="#1e88e5"/>
+      <stop offset="100%" stop-color="#0d47a1"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffca28"/>
+      <stop offset="100%" stop-color="#f9a825"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Decorative vertical bar accent -->
+  <rect x="0" y="0" width="12" height="630" fill="url(#gold)"/>
+
+  <!-- Decorative moon shape top-right -->
+  <circle cx="1080" cy="140" r="140" fill="#ffca28" opacity="0.14"/>
+  <circle cx="1020" cy="130" r="100" fill="#1565c0" opacity="0.6"/>
+
+  <!-- Decorative subtle grid (calendar feel) -->
+  <g stroke="#ffffff" stroke-width="1" opacity="0.05">
+    <line x1="60" y1="120" x2="1140" y2="120"/>
+    <line x1="60" y1="200" x2="1140" y2="200"/>
+    <line x1="60" y1="500" x2="1140" y2="500"/>
+  </g>
+
+  <!-- Star accent (Vietnamese flag) -->
+  <g transform="translate(1080, 480)" fill="#ffca28" opacity="0.9">
+    <polygon points="0,-30 8,-9 30,-9 13,5 19,27 0,14 -19,27 -13,5 -30,-9 -8,-9"/>
+  </g>
+
+  <!-- Main wordmark -->
+  <text x="60" y="220"
+        font-family="'Playfair Display', Georgia, serif"
+        font-size="140"
+        font-weight="700"
+        fill="#ffffff"
+        letter-spacing="-2">
+    Lịch Việt
+  </text>
+
+  <!-- Tagline -->
+  <text x="60" y="290"
+        font-family="'Quicksand', 'Helvetica Neue', Arial, sans-serif"
+        font-size="34"
+        font-weight="500"
+        fill="#e3f2fd"
+        letter-spacing="0.5">
+    Vietnamese Lunar Calendar · PWA · Offline
+  </text>
+
+  <!-- Metric chip (the money claim) -->
+  <g transform="translate(60, 360)">
+    <rect x="0" y="0" width="560" height="92" rx="14" fill="#ffffff" opacity="0.12"/>
+    <rect x="0" y="0" width="8" height="92" rx="4" fill="url(#gold)"/>
+    <text x="30" y="40"
+          font-family="'Quicksand', 'Helvetica Neue', Arial, sans-serif"
+          font-size="20"
+          font-weight="600"
+          fill="#ffca28"
+          letter-spacing="2">
+      VALIDATED
+    </text>
+    <text x="30" y="78"
+          font-family="'Playfair Display', Georgia, serif"
+          font-size="36"
+          font-weight="700"
+          fill="#ffffff">
+      51,135 ngày · 0 lỗi · 1960–2099
+    </text>
+  </g>
+
+  <!-- Footer row: algorithm + author -->
+  <text x="60" y="540"
+        font-family="'Quicksand', 'Helvetica Neue', Arial, sans-serif"
+        font-size="22"
+        font-weight="500"
+        fill="#bbdefb">
+    Thuật toán Hồ Ngọc Đức / Jean Meeus 1998 · UTC+7
+  </text>
+  <text x="60" y="580"
+        font-family="'Quicksand', 'Helvetica Neue', Arial, sans-serif"
+        font-size="20"
+        font-weight="600"
+        fill="#ffffff"
+        opacity="0.9">
+    bao-vn.github.io/lich-viet-pwa
+  </text>
+</svg>

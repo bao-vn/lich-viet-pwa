@@ -1,0 +1,55 @@
+# Lịch Việt — Vietnamese Lunar Calendar PWA
+
+> Single-file (~125KB) Progressive Web App implementing the Hồ Ngọc Đức / Jean Meeus 1998 Vietnamese lunar calendar algorithm at UTC+7. Runs fully offline. Covers solar↔lunar conversion, Can Chi (sexagenary cycle), Hoàng Đạo (auspicious days), 46 Vietnamese holidays, and ICS calendar export. Validated zero-error against reference implementation for 51,135 days (1960–2099).
+
+## Key facts
+
+- **Algorithm:** Hồ Ngọc Đức port of Jean Meeus, *Astronomical Algorithms* (1998)
+- **Timezone:** UTC+7 (Vietnamese standard, 105°E) — matches printed lịch blốc exactly
+- **Validated range:** 1960–2099 (51,135 days, 0 errors vs. reference)
+- **Tech:** Vanilla JavaScript (ES2020), zero build step, one HTML file, PWA
+- **Privacy:** 100% client-side, localStorage only, zero tracking, zero analytics
+- **License:** MIT
+- **Live app:** https://bao-vn.github.io/lich-viet-pwa/
+- **Source:** https://github.com/bao-vn/lich-viet-pwa
+- **MCP server for AI agents:** https://www.npmjs.com/package/lich-viet-mcp
+
+## Docs
+
+- [Product overview](https://github.com/bao-vn/lich-viet-pwa/blob/main/docs/business/01-product-overview.md): what the app does, who it's for, key metrics
+- [Product strategy](https://github.com/bao-vn/lich-viet-pwa/blob/main/docs/business/02-product-strategy.md): JTBD, competitive positioning, SWOT
+- [Feature spec / PRD](https://github.com/bao-vn/lich-viet-pwa/blob/main/docs/business/03-prd-feature-spec.md): full feature inventory + acceptance criteria
+- [Architecture decisions](https://github.com/bao-vn/lich-viet-pwa/blob/main/docs/business/04-architecture-decisions.md): 7 ADRs including the vanilla-JS zero-build policy
+- [Roadmap](https://github.com/bao-vn/lich-viet-pwa/blob/main/docs/business/05-roadmap.md): Now / Next / Later feature plans
+- [Wiki — Architecture](https://github.com/bao-vn/lich-viet-pwa/wiki/Architecture): module map of the single HTML file
+- [Wiki — FAQ](https://github.com/bao-vn/lich-viet-pwa/wiki/FAQ): common questions about the algorithm and app
+- [Wiki — Features](https://github.com/bao-vn/lich-viet-pwa/wiki/Features): end-user feature list
+
+## API for AI agents (MCP)
+
+AI agents can call the Vietnamese lunar calendar algorithm directly via Model Context Protocol:
+
+- `solar_to_lunar(day, month, year)` → `{ld, lm, ly, leap}` (Vietnamese lunar date for a Gregorian date)
+- `lunar_to_solar(lunar_day, lunar_month, lunar_year, is_leap)` → `{d, m, y}`
+- `get_can_chi_day(day, month, year)` → e.g. `"Ất Hợi"`
+- `get_can_chi_year(year)` → e.g. `"Bính Tuất 🐶"` (year of the Dog)
+- `check_hoang_dao(day, month, year)` → `true` if auspicious day, `false` otherwise
+- `get_vn_holidays(day, month, year)` → array of Vietnamese holidays on that date
+
+Install for Claude Desktop:
+
+```json
+{
+  "mcpServers": {
+    "lich-viet": { "command": "npx", "args": ["-y", "lich-viet-mcp"] }
+  }
+}
+```
+
+See [mcp-server/README.md](https://github.com/bao-vn/lich-viet-pwa/blob/main/mcp-server/README.md) for full docs and examples.
+
+## Optional
+
+- [Metrics & success criteria](https://github.com/bao-vn/lich-viet-pwa/blob/main/docs/business/06-metrics-success.md)
+- [GitHub Wiki home](https://github.com/bao-vn/lich-viet-pwa/wiki)
+- [Issue tracker](https://github.com/bao-vn/lich-viet-pwa/issues)
