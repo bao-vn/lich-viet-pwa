@@ -8,6 +8,34 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Lịch Việt">
 <meta name="description" content="Lịch âm dương Việt Nam – thuật toán Hồ Ngọc Đức">
+
+<!-- Canonical + language alternates -->
+<link rel="canonical" href="https://bao-vn.github.io/lich-viet-pwa/">
+<link rel="alternate" hreflang="vi-VN" href="https://bao-vn.github.io/lich-viet-pwa/">
+<link rel="alternate" hreflang="x-default" href="https://bao-vn.github.io/lich-viet-pwa/">
+
+<!-- Open Graph (social + AI crawlers) -->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Lịch Việt">
+<meta property="og:title" content="Lịch Việt — Lịch âm dương Việt Nam (PWA, offline)">
+<meta property="og:description" content="Lịch âm dương Việt Nam. Thuật toán Hồ Ngọc Đức / Jean Meeus 1998, UTC+7. PWA offline, một file HTML ~125KB. Đã validate 51.135 ngày 1960–2099, 0 lỗi.">
+<meta property="og:url" content="https://bao-vn.github.io/lich-viet-pwa/">
+<meta property="og:locale" content="vi_VN">
+<meta property="og:image" content="https://bao-vn.github.io/lich-viet-pwa/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Lịch Việt PWA — validated 51,135 days, 0 errors (1960–2099)">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Lịch Việt — Vietnamese Lunar Calendar PWA">
+<meta name="twitter:description" content="Offline Vietnamese lunar calendar. Hồ Ngọc Đức algorithm at UTC+7. Zero-build, single HTML file.">
+<meta name="twitter:image" content="https://bao-vn.github.io/lich-viet-pwa/og-image.png">
+
+<!-- Classical SEO hints -->
+<meta name="keywords" content="lịch âm, lịch dương, lịch việt, âm lịch việt nam, hoàng đạo, can chi, hồ ngọc đức, vietnamese lunar calendar, PWA">
+<meta name="author" content="bao-vn">
+
 <title>Lịch Việt</title>
 
 <!-- PWA Manifest inline -->
@@ -1205,6 +1233,69 @@ body{
 .export-btn:active{background:var(--primary-pale);color:var(--primary)}
 
 /* ── TOAST ── */
+/* ── CONFIRM DIALOG ── */
+.confirm-overlay{
+  position:fixed;inset:0;
+  background:rgba(26,35,126,.45);
+  backdrop-filter:blur(0);
+  z-index:600;
+  opacity:0;pointer-events:none;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+  transition:opacity .24s ease, backdrop-filter .24s ease;
+}
+.confirm-overlay.open{opacity:1;pointer-events:all;backdrop-filter:blur(4px)}
+.confirm-dialog{
+  background:var(--surface);
+  border-radius:18px;
+  padding:24px 22px 18px;
+  max-width:340px;width:100%;
+  box-shadow:0 12px 48px rgba(21,101,192,.24);
+  transform:scale(.9);
+  transition:transform .3s cubic-bezier(.22,.9,.28,1);
+  text-align:center;
+}
+.confirm-overlay.open .confirm-dialog{transform:scale(1)}
+.confirm-icon{font-size:2.2rem;margin-bottom:8px;line-height:1}
+.confirm-title{
+  font-family:var(--font-display);
+  font-size:1.1rem;font-weight:700;
+  color:var(--primary);margin-bottom:8px;
+}
+.confirm-message{
+  font-size:.88rem;color:var(--text-body);
+  line-height:1.5;margin-bottom:18px;
+  white-space:pre-line;
+}
+.confirm-actions{
+  display:flex;gap:8px;
+}
+.confirm-btn{
+  flex:1;
+  padding:11px;border-radius:10px;
+  font-size:.9rem;font-weight:700;
+  font-family:var(--font-body);
+  cursor:pointer;
+  border:1.5px solid transparent;
+  transition:background .15s ease, transform .12s ease, border-color .15s ease;
+}
+.confirm-cancel{
+  background:var(--surface2);
+  border-color:var(--border);
+  color:var(--text-body);
+}
+.confirm-cancel:hover{background:var(--surface3)}
+.confirm-cancel:active{transform:scale(.96)}
+.confirm-ok{
+  background:var(--primary);
+  color:#fff;
+  border-color:var(--primary);
+}
+.confirm-ok:hover{background:var(--primary-light);border-color:var(--primary-light)}
+.confirm-ok:active{transform:scale(.96)}
+.confirm-ok.danger{background:var(--accent);border-color:var(--accent)}
+.confirm-ok.danger:hover{background:#d32f2f;border-color:#d32f2f}
+
 .toast{
   position:fixed;top:calc(var(--safe-top) + 70px);left:50%;
   transform:translateX(-50%) translateY(-18px) scale(.96);
@@ -1355,6 +1446,89 @@ body{
   .solar{font-size:1.55rem}
 }
 </style>
+
+<!-- Structured data for AI crawlers + search engines -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": ["SoftwareApplication", "WebApplication"],
+      "name": "Lịch Việt",
+      "alternateName": "Vietnamese Lunar Calendar PWA",
+      "url": "https://bao-vn.github.io/lich-viet-pwa/",
+      "description": "Vietnamese lunar-solar calendar as a single-file Progressive Web App. Implements the Hồ Ngọc Đức / Jean Meeus 1998 astronomical algorithm at UTC+7, with Can Chi, Hoàng Đạo, and Vietnamese holidays. Validated 51,135 days (1960–2099), 0 errors.",
+      "applicationCategory": "UtilitiesApplication",
+      "applicationSubCategory": "Calendar",
+      "operatingSystem": "Any (browser-based PWA); installable on Android + iOS 16.4+",
+      "browserRequirements": "Requires a modern browser with ES2020 support",
+      "inLanguage": ["vi-VN", "en-US"],
+      "isAccessibleForFree": true,
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+      "author": { "@type": "Person", "name": "bao-vn", "url": "https://github.com/bao-vn" },
+      "codeRepository": "https://github.com/bao-vn/lich-viet-pwa",
+      "license": "https://opensource.org/licenses/MIT",
+      "softwareVersion": "1.0",
+      "fileSize": "125KB",
+      "featureList": [
+        "Solar-to-lunar conversion (validated 1960–2099)",
+        "Lunar-to-solar conversion",
+        "Can Chi (sexagenary cycle) for year and day",
+        "Hoàng Đạo (auspicious day) detection",
+        "46 Vietnamese holidays (31 solar + 15 lunar)",
+        "Offline-first PWA",
+        "ICS import/export (RFC 5545)",
+        "Recurring events (weekly, yearly solar, yearly lunar)",
+        "Local notifications (2-tier)"
+      ]
+    },
+    {
+      "@type": "Dataset",
+      "name": "Lịch Việt Algorithm Validation",
+      "description": "Validation run confirming the Hồ Ngọc Đức lunar algorithm produces zero errors across 51,135 days from 1960 to 2099 at UTC+7, versus the reference implementation.",
+      "creator": { "@type": "Person", "name": "bao-vn" },
+      "variableMeasured": [
+        { "@type": "PropertyValue", "name": "daysValidated", "value": 51135 },
+        { "@type": "PropertyValue", "name": "errorCount", "value": 0 },
+        { "@type": "PropertyValue", "name": "yearRangeStart", "value": 1960 },
+        { "@type": "PropertyValue", "name": "yearRangeEnd", "value": 2099 },
+        { "@type": "PropertyValue", "name": "timeZone", "value": "UTC+7" }
+      ],
+      "isBasedOn": "https://www.informatik.uni-leipzig.de/~duc/amlich/"
+    },
+    {
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "Thuật toán lịch âm nào được dùng?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Thuật toán Hồ Ngọc Đức, dựa trên Jean Meeus, Astronomical Algorithms (1998), tính tại múi giờ UTC+7 cho Việt Nam."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Ứng dụng có hoạt động offline không?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Có. Toàn bộ app là một file HTML khoảng 125KB, cài làm PWA và chạy hoàn toàn offline sau lần mở đầu."
+          }
+        },
+        {
+          "@type": "Question",
+          "name": "Độ chính xác của thuật toán?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Đã kiểm định 51.135 ngày từ năm 1960 đến 2099, không có sai lệch so với thuật toán tham chiếu của Hồ Ngọc Đức."
+          }
+        }
+      ]
+    }
+  ]
+}
+</script>
+
 </head>
 <body>
 
@@ -1609,6 +1783,19 @@ body{
       <button class="form-submit" style="margin-top:18px;width:100%" onclick="closeAllSheets();render()">Xem lịch</button>
     </div>
 
+  </div>
+</div>
+
+<!-- CONFIRM DIALOG (reusable modal for destructive actions) -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-dialog" id="confirmDialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="confirm-icon" id="confirmIcon">⚠️</div>
+    <h3 class="confirm-title" id="confirmTitle"></h3>
+    <p class="confirm-message" id="confirmMessage"></p>
+    <div class="confirm-actions">
+      <button class="confirm-btn confirm-cancel" id="confirmCancelBtn"></button>
+      <button class="confirm-btn confirm-ok" id="confirmOkBtn"></button>
+    </div>
   </div>
 </div>
 
@@ -2768,28 +2955,43 @@ function onRepeatChange(){
   }
 }
 
-function delEventUI(d,m,y,id){
+async function delEventUI(d,m,y,id){
+  const k=dayKey(d,m,y);
+  const ev=(events[k]||[]).find(e=>e.id===id);
+  const name=ev?.name||'sự kiện';
+  const ok=await confirmDialog({
+    title:'Xoá sự kiện?',
+    message:`"${name}"\n${d}/${m}/${y}\n\nHành động này không thể hoàn tác.`,
+    confirmText:'Xoá',
+    cancelText:'Huỷ',
+    danger:true,
+    icon:'🗑️',
+  });
+  if(!ok)return;
   delEvent(d,m,y,id);
   openDaySheet(d,m,y);
   render();
+  toast('Đã xoá sự kiện');
 }
 
-function promptDeleteRecurring(d,m,y,ruleId){
+async function promptDeleteRecurring(d,m,y,ruleId){
   const rule=recurringRules.find(r=>r.id===ruleId);
   if(!rule){toast('Không tìm thấy chuỗi lặp');return}
-  const choice=prompt(
-    `"${rule.name}" là sự kiện lặp.\n\n`+
-    `Gõ số để chọn:\n`+
-    `  1 = Chỉ xoá ngày ${d}/${m}/${y}\n`+
-    `  2 = Xoá cả chuỗi lặp\n`+
-    `  (để trống = huỷ)`,
-    '1'
-  );
-  if(choice==='1'){
+  const choice=await confirmDialog({
+    title:'Xoá sự kiện lặp?',
+    message:`"${rule.name}" là sự kiện lặp.\nBạn muốn xoá thế nào?`,
+    cancelText:'Huỷ',
+    icon:'🔁',
+    choices:[
+      {label:`Chỉ ngày ${d}/${m}/${y}`,value:'one'},
+      {label:'Cả chuỗi',value:'all',danger:true},
+    ],
+  });
+  if(choice==='one'){
     deleteOccurrence(ruleId,dayKey(d,m,y));
     openDaySheet(d,m,y);render();
     toast('Đã xoá ngày này khỏi chuỗi');
-  }else if(choice==='2'){
+  }else if(choice==='all'){
     deleteSeries(ruleId);
     openDaySheet(d,m,y);render();
     toast('Đã xoá cả chuỗi lặp');
@@ -3358,6 +3560,65 @@ function toastHide(){
   const el=document.getElementById('toast');
   el.classList.remove('show');
   clearTimeout(toastTimer);
+}
+
+// Reusable confirm dialog — returns Promise<string|boolean>.
+// If `choices` provided, returns the chosen value (string). Otherwise returns true/false.
+function confirmDialog({title,message,confirmText='Xác nhận',cancelText='Huỷ',danger=false,icon='⚠️',choices=null}={}){
+  return new Promise(resolve=>{
+    const overlay=document.getElementById('confirmOverlay');
+    const titleEl=document.getElementById('confirmTitle');
+    const msgEl=document.getElementById('confirmMessage');
+    const iconEl=document.getElementById('confirmIcon');
+    const okBtn=document.getElementById('confirmOkBtn');
+    const cancelBtn=document.getElementById('confirmCancelBtn');
+    const actions=overlay.querySelector('.confirm-actions');
+
+    titleEl.textContent=title||'Xác nhận';
+    msgEl.textContent=message||'';
+    iconEl.textContent=icon;
+
+    // Build action buttons dynamically when `choices` provided
+    if(choices&&choices.length){
+      actions.innerHTML='';
+      const cBtn=document.createElement('button');
+      cBtn.className='confirm-btn confirm-cancel';
+      cBtn.textContent=cancelText;
+      actions.appendChild(cBtn);
+      const choiceBtns=[];
+      choices.forEach((c,i)=>{
+        const btn=document.createElement('button');
+        btn.className='confirm-btn confirm-ok'+(c.danger?' danger':'');
+        btn.textContent=c.label;
+        actions.appendChild(btn);
+        choiceBtns.push({btn,value:c.value});
+      });
+      const close=(val)=>{
+        overlay.classList.remove('open');
+        setTimeout(()=>{
+          // Restore default 2-button layout for next use
+          actions.innerHTML='<button class="confirm-btn confirm-cancel" id="confirmCancelBtn"></button><button class="confirm-btn confirm-ok" id="confirmOkBtn"></button>';
+          resolve(val);
+        },280);
+      };
+      cBtn.onclick=()=>close(null);
+      choiceBtns.forEach(({btn,value})=>btn.onclick=()=>close(value));
+      overlay.onclick=e=>{if(e.target===overlay)close(null)};
+    }else{
+      okBtn.textContent=confirmText;
+      cancelBtn.textContent=cancelText;
+      okBtn.className='confirm-btn confirm-ok'+(danger?' danger':'');
+      const close=(val)=>{
+        overlay.classList.remove('open');
+        setTimeout(()=>resolve(val),280);
+      };
+      okBtn.onclick=()=>close(true);
+      cancelBtn.onclick=()=>close(false);
+      overlay.onclick=e=>{if(e.target===overlay)close(false)};
+    }
+    // Trigger animation
+    requestAnimationFrame(()=>overlay.classList.add('open'));
+  });
 }
 
 document.getElementById('btnPrev').onclick=()=>navigate(-1);
